@@ -250,17 +250,18 @@ describe("Grapevine field inbox", () => {
 });
 
 describe("Grapevine WebMCP tools", () => {
-  it("registers the seven required tools", async () => {
+  it("registers the eight required tools", async () => {
     installFetch();
     const tools = installModelContext();
     render(<App />);
 
-    await waitFor(() => expect(tools.size).toBe(7));
+    await waitFor(() => expect(tools.size).toBe(8));
     expect([...tools.keys()].sort()).toEqual([
       "find_available_sources",
       "get_drone_status",
       "get_response",
       "get_web_baseline",
+      "list_available_actions",
       "prepare_drone_mission",
       "prepare_source_request",
       "send_source_request"
@@ -271,7 +272,11 @@ describe("Grapevine WebMCP tools", () => {
     installFetch();
     const tools = installModelContext();
     render(<App />);
-    await waitFor(() => expect(tools.size).toBe(7));
+    await waitFor(() => expect(tools.size).toBe(8));
+
+    const catalog = await tools.get("list_available_actions")!.execute({}) as { actions: Array<{ tool: string; description: string }> };
+    expect(catalog.actions).toHaveLength(8);
+    expect(catalog.actions.every((action) => action.description.length > 0)).toBe(true);
 
     const found = (await tools.get("find_available_sources")!.execute({
       near: "Watauga Relief Corridor"
@@ -298,7 +303,7 @@ describe("Grapevine WebMCP tools", () => {
 });
 
 describe("Grapevine resource coordination", () => {
-  it("presents the partner workflow and registers only its seven WebMCP tools", async () => {
+  it("presents the partner workflow and registers only its eight WebMCP tools", async () => {
     Object.defineProperty(window, "location", { configurable: true, value: new URL("https://example.test/response") });
     installResponseFetch();
     const tools = installModelContext();
@@ -306,7 +311,7 @@ describe("Grapevine resource coordination", () => {
 
     expect(await screen.findByRole("heading", { name: "Resource Coordination" })).toBeInTheDocument();
     expect(await screen.findByText("High Country Community Response")).toBeInTheDocument();
-    await waitFor(() => expect(tools.size).toBe(7));
+    await waitFor(() => expect(tools.size).toBe(8));
     expect([...tools.keys()].sort()).toEqual([
       "create_response_shortlist",
       "draft_supply_appeal",
@@ -314,6 +319,7 @@ describe("Grapevine resource coordination", () => {
       "get_crisis_brief",
       "get_partner_details",
       "get_supply_inventory",
+      "list_available_actions",
       "prepare_coordination_request"
     ]);
     expect(tools.has("find_available_sources")).toBe(false);
@@ -324,7 +330,7 @@ describe("Grapevine resource coordination", () => {
     installResponseFetch();
     const tools = installModelContext();
     render(<App />);
-    await waitFor(() => expect(tools.size).toBe(7));
+    await waitFor(() => expect(tools.size).toBe(8));
 
     const result = await tools.get("prepare_coordination_request")!.execute({
       shortlist_id: "shortlist-1",

@@ -34,6 +34,8 @@ export const sessionIdSchema = z
   .string()
   .check(z.trim(), z.minLength(1, "A session ID is required."));
 
+export const emptyArgsSchema = z.object({});
+
 export const findAvailableSourcesArgsSchema = z.object({
   near: nearSchema.check(
     z.describe("An operational area, route, facility, or incident site.")
@@ -98,6 +100,10 @@ export const prepareDroneMissionArgsSchema = z.object({
 });
 
 export const toolInputSchemas = {
+  empty: z.toJSONSchema(emptyArgsSchema, {
+    target: "draft-07",
+    io: "input"
+  }),
   findAvailableSources: z.toJSONSchema(findAvailableSourcesArgsSchema, {
     target: "draft-07",
     io: "input"

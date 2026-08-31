@@ -54,7 +54,7 @@ initial public commit is dated August 31, 2026.
 
 Use the ChatGPT desktop app's built-in browser. Site tools are tied to the page
 that provides them, so keep the relevant Grapevine page open while running each
-scenario. The operations page and partner directory each expose seven tools. The
+scenario. The operations page and partner directory each expose eight tools. The
 field inbox intentionally exposes no WebMCP tools because it is the human
 response surface.
 
@@ -64,7 +64,7 @@ Requirements:
 2. Visit <https://project-grapevine.preflyhq.com/>.
 3. Approve access to the site if prompted.
 4. Check the site-tools control in the address bar. The operations page should
-   show seven available tools.
+   show eight available tools.
 
 Site-tool availability depends on the tester's ChatGPT account and selected
 model. See OpenAI's [site tools documentation](https://help.openai.com/en/articles/20001423-using-site-tools-in-the-chatgpt-desktop-app).
@@ -178,8 +178,9 @@ no Facebook account is connected and no external post is created.
 
 ## Route-Specific WebMCP Tools
 
-The Aid Logistics board at `/` registers seven tools:
+The Aid Logistics board at `/` registers eight tools:
 
+- `list_available_actions`
 - `find_available_sources`
 - `get_web_baseline`
 - `prepare_source_request`
@@ -194,8 +195,9 @@ gauge, roadside conditions camera, and recon drone return deterministic, clearly
 simulated telemetry after authorization. A field responder cannot register a
 phone as an infrastructure sensor.
 
-The Resource Coordination workspace at `/response` registers seven separate tools:
+The Resource Coordination workspace at `/response` registers eight separate tools:
 
+- `list_available_actions`
 - `get_crisis_brief`
 - `find_response_partners`
 - `get_partner_details`
