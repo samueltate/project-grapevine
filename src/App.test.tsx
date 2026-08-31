@@ -28,7 +28,7 @@ const spot = {
 
 const source = {
   id: "src-boone-field",
-  handle: "boone-field-team",
+  handle: "miles828",
   trust_score: 0.91,
   place_id: spot.place_id,
   location_name: spot.name,
@@ -40,15 +40,20 @@ const source = {
   online: true,
   checked_in_at: new Date().toISOString(),
   last_active: new Date().toISOString(),
-  distance_m: 0
+  distance_m: 0,
+  display_name: "Miles Carter", source_profile: "human" as const,
+  channel_label: "Radio CH 3", availability_label: "Available",
+  battery_percent: null, mission_status: null, image_url: null, telemetry: {}
 };
 
 const machineSource = {
   ...source,
   id: "src-creek-gauge",
   handle: "demo-creek-gauge-7",
+  display_name: "Creek depth sensor",
   trust_score: 0.95,
   source_kind: "system" as const,
+  source_profile: "sensor" as const,
   verification_label: "Authenticated sensor feed (simulated)",
   offered: ["flood_depth", "route_status", "hazard_report"]
 };
@@ -101,7 +106,9 @@ const responseBundle = {
   partners: [responsePartner],
   shortlists: [],
   requests: [],
-  field_verification: null
+  field_verification: null,
+  inventory: [{ id: "inv-yellow-jacket", item_name: "Yellow-jacket repellent", unit: "cases", on_hand: 18, requested: 60, status: "shortage" as const, location: "Boone Staging Hub", field_signal: "Field teams report increased yellow-jacket activity.", donation_url: "https://donate.example/watauga-relief/repellent", updated_at: new Date().toISOString() }],
+  public_drafts: []
 };
 
 function installModelContext() {
@@ -169,6 +176,8 @@ function installResponseFetch() {
     if (url === "/api/response/partners/partner-high-country") return Response.json(responsePartner);
     if (url === "/api/response/shortlists") return Response.json({ shortlist: { id: "shortlist-1", ...body, created_at: new Date().toISOString(), partners: [responsePartner] } });
     if (url === "/api/response/requests") return Response.json({ request: { id: "coord-1", ...body, status: "pending_approval", field_verification_required: true, uncertainty: responseBundle.incident.uncertainty, created_at: new Date().toISOString(), approved_at: null }, approval_required: true, recommended_next_step: { page: "/", tool: "find_available_sources" } });
+    if (url === "/api/response/inventory") return Response.json({ inventory: responseBundle.inventory });
+    if (url === "/api/response/appeals") return Response.json({ draft: { id: "draft-1", item_id: body.item_id, channel: "social", copy: "Draft appeal", donation_url: responseBundle.inventory[0].donation_url, status: "draft", created_at: new Date().toISOString() } });
     return Response.json(responseBundle);
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -191,7 +200,7 @@ describe("Grapevine board", () => {
 
     expect(await screen.findByRole("heading", { name: "Watauga Relief Corridor" })).toBeInTheDocument();
     expect(await screen.findByDisplayValue("Watauga Relief Corridor")).toBeInTheDocument();
-    expect(await screen.findByText("Boone field team")).toBeInTheDocument();
+    expect((await screen.findAllByText("Miles Carter")).length).toBeGreaterThan(0);
     expect(screen.getByText("Creek depth sensor")).toBeInTheDocument();
     expect(screen.getByText("Earlier update says the route was open")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Field inbox" })).toHaveAttribute("href", "/drive");
@@ -202,7 +211,7 @@ describe("Grapevine board", () => {
     installFetch();
     render(<App />);
 
-    await screen.findByText("Boone field team");
+    await screen.findAllByText("Miles Carter");
     fireEvent.click(screen.getAllByRole("button", { name: "Request" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Prepare question" }));
 
@@ -241,18 +250,19 @@ describe("Grapevine field inbox", () => {
 });
 
 describe("Grapevine WebMCP tools", () => {
-  it("registers the five required tools", async () => {
+  it("registers the six required tools", async () => {
     installFetch();
     const tools = installModelContext();
     render(<App />);
 
-    await waitFor(() => expect(tools.size).toBe(5));
+    await waitFor(() => expect(tools.size).toBe(6));
     expect([...tools.keys()].sort()).toEqual([
       "ask_source",
       "find_available_sources",
+      "get_drone_status",
       "get_response",
       "get_web_baseline",
-      "rate_response"
+      "prepare_drone_mission"
     ]);
   });
 
@@ -260,7 +270,7 @@ describe("Grapevine WebMCP tools", () => {
     installFetch();
     const tools = installModelContext();
     render(<App />);
-    await waitFor(() => expect(tools.size).toBe(5));
+    await waitFor(() => expect(tools.size).toBe(6));
 
     const found = (await tools.get("find_available_sources")!.execute({
       near: "Watauga Relief Corridor"
@@ -280,7 +290,7 @@ describe("Grapevine WebMCP tools", () => {
 });
 
 describe("Grapevine resource coordination", () => {
-  it("presents the partner workflow and registers only its five WebMCP tools", async () => {
+  it("presents the partner workflow and registers only its seven WebMCP tools", async () => {
     Object.defineProperty(window, "location", { configurable: true, value: new URL("https://example.test/response") });
     installResponseFetch();
     const tools = installModelContext();
@@ -288,12 +298,14 @@ describe("Grapevine resource coordination", () => {
 
     expect(await screen.findByRole("heading", { name: "Resource Coordination" })).toBeInTheDocument();
     expect(await screen.findByText("High Country Community Response")).toBeInTheDocument();
-    await waitFor(() => expect(tools.size).toBe(5));
+    await waitFor(() => expect(tools.size).toBe(7));
     expect([...tools.keys()].sort()).toEqual([
       "create_response_shortlist",
+      "draft_supply_appeal",
       "find_response_partners",
       "get_crisis_brief",
       "get_partner_details",
+      "get_supply_inventory",
       "prepare_coordination_request"
     ]);
     expect(tools.has("find_available_sources")).toBe(false);
@@ -304,7 +316,7 @@ describe("Grapevine resource coordination", () => {
     installResponseFetch();
     const tools = installModelContext();
     render(<App />);
-    await waitFor(() => expect(tools.size).toBe(5));
+    await waitFor(() => expect(tools.size).toBe(7));
 
     const result = await tools.get("prepare_coordination_request")!.execute({
       shortlist_id: "shortlist-1",

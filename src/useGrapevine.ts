@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { AppState, RequestType, Session, Source, Spot } from "./schemas";
+import type { AppState, DroneMission, DroneStatus, RequestType, Session, Source, Spot } from "./schemas";
 
 const emptyState: AppState = {
   spots: [],
@@ -37,6 +37,8 @@ export type CheckInInput = {
   lat?: number;
   lng?: number;
   offered: RequestType[];
+  display_name?: string;
+  channel_label?: string;
 };
 
 export type GrapevineActions = {
@@ -56,7 +58,9 @@ export type GrapevineActions = {
     answer_value: string,
     answer_note?: string
   ) => Promise<Session>;
-  rateResponse: (session_id: string, stars: number) => Promise<Session>;
+  getDroneStatus: (source_id: string) => Promise<DroneStatus>;
+  prepareDroneMission: (input: { source_id: string; target_name: string; objective: string; target_lat?: number; target_lng?: number }) => Promise<DroneMission>;
+  approveDroneMission: (mission_id: string) => Promise<DroneMission>;
   checkIn: (input: CheckInInput) => Promise<Source>;
   loadDriver: (source_id: string) => Promise<{ source: Source | null; sessions: Session[] }>;
 };
@@ -67,6 +71,8 @@ export function useGrapevine() {
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
   const [activeSession, setActiveSession] = useState<Session | null>(null);
   const [baseline, setBaseline] = useState<Spot | null>(null);
+  const [droneStatus, setDroneStatus] = useState<DroneStatus | null>(null);
+  const [droneMission, setDroneMission] = useState<DroneMission | null>(null);
   const [error, setError] = useState<string | null>(null);
   const stateRef = useRef(state);
 
@@ -180,21 +186,24 @@ export function useGrapevine() {
     [refresh]
   );
 
-  const rateResponse = useCallback(
-    async (session_id: string, stars: number) => {
-      const result = await api<{ session: Session }>(
-        `/api/sessions/${session_id}/rate`,
-        {
-          method: "POST",
-          body: JSON.stringify({ stars })
-        }
-      );
-      setActiveSession(result.session);
-      await refresh();
-      return result.session;
-    },
-    [refresh]
-  );
+  const getDroneStatus = useCallback(async (source_id: string) => {
+    const result = await api<DroneStatus>(`/api/drones/${encodeURIComponent(source_id)}`);
+    setDroneStatus(result);
+    return result;
+  }, []);
+
+  const prepareDroneMission = useCallback(async (input: { source_id: string; target_name: string; objective: string; target_lat?: number; target_lng?: number }) => {
+    const result = await api<{ mission: DroneMission }>("/api/drone-missions", { method: "POST", body: JSON.stringify(input) });
+    setDroneMission(result.mission);
+    return result.mission;
+  }, []);
+
+  const approveDroneMission = useCallback(async (mission_id: string) => {
+    const result = await api<{ mission: DroneMission }>(`/api/drone-missions/${encodeURIComponent(mission_id)}/approve`, { method: "POST" });
+    setDroneMission(result.mission);
+    await refresh();
+    return result.mission;
+  }, [refresh]);
 
   const checkIn = useCallback(
     async (input: CheckInInput) => {
@@ -227,7 +236,9 @@ export function useGrapevine() {
       getSession,
       getResponse,
       submitAnswer,
-      rateResponse,
+      getDroneStatus,
+      prepareDroneMission,
+      approveDroneMission,
       checkIn,
       loadDriver
     }),
@@ -240,7 +251,9 @@ export function useGrapevine() {
       getSession,
       getResponse,
       submitAnswer,
-      rateResponse,
+      getDroneStatus,
+      prepareDroneMission,
+      approveDroneMission,
       checkIn,
       loadDriver
     ]
@@ -255,6 +268,8 @@ export function useGrapevine() {
     activeSession,
     setActiveSession,
     baseline,
+    droneStatus,
+    droneMission,
     error,
     setError,
     actions

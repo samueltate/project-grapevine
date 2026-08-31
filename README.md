@@ -23,8 +23,8 @@ channels, and operational conditions are fictional. They do not represent
 current emergency or travel guidance.
 
 This repository is a technical reference, not the commercial product or
-operating model behind it. Source verification, quality scoring, and machine
-responses are intentionally simplified for the demonstration.
+operating model behind it. Source verification and machine responses are
+intentionally simplified for the demonstration.
 
 Live demo: <https://project-grapevine.preflyhq.com/>
 
@@ -44,8 +44,8 @@ not autonomous dispatch:
 
 | Workspace | Agent contribution | Human responsibility |
 | --- | --- | --- |
-| Live Ground Truth | Finds people and sensors, reads the published baseline, and prepares a structured verification request | Authorizes the request, supplies field observations, and reviews source quality |
-| Resource Coordination | Finds relevant organizations, inspects evidence, builds a shortlist, and prepares a response plan | Reviews uncertainty, confirms current route evidence, and approves the plan |
+| Live Ground Truth | Finds people, sensors, and a simulated drone; compares evidence; and stages questions or drone missions | Authorizes requests and simulated missions, then supplies field observations |
+| Resource Coordination | Matches a verified obstruction to a debris crew, reads supply inventory, and drafts a shortage appeal | Reviews uncertainty, approves the plan, and decides whether a draft is ever published |
 
 This project was created during The WebMCP Challenge submission period. Its
 initial public commit is dated August 31, 2026.
@@ -54,7 +54,7 @@ initial public commit is dated August 31, 2026.
 
 Use the ChatGPT desktop app's built-in browser. Site tools are tied to the page
 that provides them, so keep the relevant Grapevine page open while running each
-scenario. The operations page and partner directory each expose five tools. The
+scenario. The operations page exposes six tools and the partner directory exposes seven. The
 field inbox intentionally exposes no WebMCP tools because it is the human
 response surface.
 
@@ -64,32 +64,33 @@ Requirements:
 2. Visit <https://project-grapevine.preflyhq.com/>.
 3. Approve access to the site if prompted.
 4. Check the site-tools control in the address bar. The operations page should
-   show five available tools.
+   show six available tools.
 
 Site-tool availability depends on the tester's ChatGPT account and selected
 model. See OpenAI's [site tools documentation](https://help.openai.com/en/articles/20001423-using-site-tools-in-the-chatgpt-desktop-app).
 
-### Scenario 1: Verify Conditions with a Machine Source
+### Scenario 1: Corroborate a Human Report with a Drone
 
 Open <https://project-grapevine.preflyhq.com/> and send:
 
 > Use only the WebMCP tools provided by this page. Read the published baseline
 > for the Watauga Relief Corridor, find available sources within 5 km, and use
-> the road conditions camera to prepare a hazard-report question about the aid
-> route. Stop when human approval is required.
+> Miles to prepare a route-status question asking whether a fallen tree blocks
+> access to Mountain Shelter B. Stop when human approval is required.
 
 Expected flow:
 
 1. ChatGPT calls `get_web_baseline` and `find_available_sources`.
-2. ChatGPT calls `ask_source` for the simulated road camera.
+2. ChatGPT calls `ask_source` for Miles.
 3. The request drawer opens. Select **Send question**.
 4. Send this follow-up:
 
-> Retrieve the structured response, summarize its operational impact, and rate
-> the response four stars.
+> Retrieve the structured response. Then inspect Watauga Recon 1 and prepare a
+> simulated repositioning mission to confirm the obstruction. Stop for approval.
 
-ChatGPT should call `get_response` and `rate_response`. This exercises all five
-Demo 1 tools without requiring a second device.
+ChatGPT should call `get_response`, `get_drone_status`, and
+`prepare_drone_mission`. The simulated mission remains pending until a person
+selects the visible approval button.
 
 ### Scenario 1B: Verify Conditions with a Human Source
 
@@ -97,11 +98,11 @@ This optional version uses a phone or second browser window.
 
 1. On the second device, open
    <https://project-grapevine.preflyhq.com/drive>.
-2. Use call sign `boone-field-team`, keep the operational area as
+2. Use the seeded name `Miles Carter` and call sign `miles828`, keep the operational area as
    `Watauga Relief Corridor`, and select **Go online**.
 3. On the operations page in ChatGPT, send:
 
-> Use this page's WebMCP tools to find the Boone field team and prepare a
+> Use this page's WebMCP tools to find Miles and prepare a
 > route-status question asking whether relief vehicles can safely reach
 > Mountain Shelter B. Stop for approval.
 
@@ -120,10 +121,9 @@ instead of a deterministic sensor.
 Open <https://project-grapevine.preflyhq.com/response> and send:
 
 > Use only the WebMCP tools provided by this page. Read the crisis brief. We
-> have two truckloads of bottled water and 40 temporary shelter kits at the
-> Boone Staging Hub. Find up to two active partners serving the Watauga Relief
-> Corridor for water, favor locally led organizations, inspect the evidence for
-> each match, save a transparent shortlist, and prepare a coordination request.
+> Miles and the recon drone confirm a fallen tree blocking the shelter route.
+> Find an active, locally led debris-clearance partner serving the Watauga Relief
+> Corridor, inspect its evidence, save a transparent shortlist, and prepare a crew coordination request.
 > Do not claim that anyone has been contacted or that dispatch is approved.
 > Tell me what remains uncertain.
 
@@ -134,7 +134,7 @@ Expected flow:
 2. ChatGPT calls `create_response_shortlist` and
    `prepare_coordination_request`.
 3. The response plan shows the selected partners, but dispatch remains locked
-   until a current route report is available.
+   until a current obstruction report is available.
 
 To test the cross-demo handoff, continue with:
 
@@ -142,10 +142,14 @@ To test the cross-demo handoff, continue with:
 > team and prepare a route-status question asking whether aid vehicles can
 > safely reach Mountain Shelter B. Stop for approval.
 
-Approve the question, answer `passable` from the field inbox, and ask ChatGPT to
+Approve the question, answer `blocked` from the field inbox, and ask ChatGPT to
 retrieve the response and return to the partner directory. The plan should show
 the field evidence and unlock the final human-controlled **Approve plan**
-button. A `caution` or `blocked` report should keep approval locked.
+button.
+
+Then ask ChatGPT to read the supply inventory, explain why blanket volume is not
+the priority, and draft a social appeal for yellow-jacket repellent without
+publishing anything. The result should be labeled **Draft · not published**.
 
 ### Troubleshooting Site Tools
 
@@ -166,31 +170,34 @@ button. A `caution` or `blocked` report should keep approval locked.
 3. The agent prepares a structured verification request.
 4. A user reviews and authorizes the request.
 5. The selected source returns a structured response with optional context.
-6. The requester reviews the response and records a source-quality rating.
+6. The agent can corroborate the report with simulated drone telemetry before a human approves the next action.
 
 ## Route-Specific WebMCP Tools
 
-The Aid Logistics board at `/` registers five tools:
+The Aid Logistics board at `/` registers six tools:
 
 - `find_available_sources`
 - `get_web_baseline`
 - `ask_source`
 - `get_response`
-- `rate_response`
+- `get_drone_status`
+- `prepare_drone_mission`
 
 The same tools work for both source channels. Human requests are delivered to
-the human-only field view at `/drive`. Two seeded machine sources, a creek-depth
-gauge and roadside conditions camera, return deterministic, clearly labeled
+the human-only field view at `/drive`. Three seeded machine sources, a creek-depth
+gauge, roadside conditions camera, and recon drone return deterministic, clearly labeled
 simulated telemetry after authorization. A field responder cannot register a
 phone as an infrastructure sensor.
 
-The Resource Coordination workspace at `/response` registers five separate tools:
+The Resource Coordination workspace at `/response` registers seven separate tools:
 
 - `get_crisis_brief`
 - `find_response_partners`
 - `get_partner_details`
 - `create_response_shortlist`
 - `prepare_coordination_request`
+- `get_supply_inventory`
+- `draft_supply_appeal`
 
 The first three tools read structured directory evidence. The final two save a
 transparent shortlist and stage a coordination request. No external partner is
@@ -214,7 +221,8 @@ inbox.
 - Cloudflare D1 persistence
 - Approval-gated requests
 - Structured logistics responses
-- Illustrative source-quality feedback
+- Simulated drone telemetry and approval-gated missions
+- Inventory signals and draft-only public appeals
 
 The core reference does not require R2 or Durable Objects. D1 persists the
 request loop, and the clients use short polling for updates.

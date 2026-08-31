@@ -3,9 +3,10 @@ import {
   askSourceArgsSchema,
   findAvailableSourcesArgsSchema,
   getResponseArgsSchema,
+  getDroneStatusArgsSchema,
   getWebBaselineArgsSchema,
   parseArgs,
-  rateResponseArgsSchema,
+  prepareDroneMissionArgsSchema,
   toolInputSchemas
 } from "./schemas";
 import type { GrapevineActions } from "./useGrapevine";
@@ -142,15 +143,25 @@ export function useWebMCPTools(actions: GrapevineActions): WebMCPToolsState {
           return actions.getResponse(session_id);
         }
       } satisfies WebMCPTool,
-      rateResponse: {
-        name: "rate_response",
+      getDroneStatus: {
+        name: "get_drone_status",
         description:
-          "Review a completed response and update its source quality signal.",
-        inputSchema: toolInputSchemas.rateResponse,
+          "Read simulated recon-drone battery, connection, position, mission status, and latest aerial observation.",
+        inputSchema: toolInputSchemas.getDroneStatus,
+        annotations: { ...annotations, readOnlyHint: true },
+        async execute(args: unknown) {
+          const { source_id } = parseArgs(getDroneStatusArgsSchema, args);
+          return actions.getDroneStatus(source_id);
+        }
+      } satisfies WebMCPTool,
+      prepareDroneMission: {
+        name: "prepare_drone_mission",
+        description:
+          "Stage a simulated drone repositioning mission for visible human approval. This never moves a real device.",
+        inputSchema: toolInputSchemas.prepareDroneMission,
         annotations,
         async execute(args: unknown) {
-          const { session_id, stars } = parseArgs(rateResponseArgsSchema, args);
-          return actions.rateResponse(session_id, stars);
+          return actions.prepareDroneMission(parseArgs(prepareDroneMissionArgsSchema, args));
         }
       } satisfies WebMCPTool
     }),
@@ -162,7 +173,8 @@ export function useWebMCPTools(actions: GrapevineActions): WebMCPToolsState {
     useWebMCPTool(tools.getWebBaseline),
     useWebMCPTool(tools.askSource),
     useWebMCPTool(tools.getResponse),
-    useWebMCPTool(tools.rateResponse)
+    useWebMCPTool(tools.getDroneStatus),
+    useWebMCPTool(tools.prepareDroneMission)
   ];
 
   const error = registrations.find((item) => item.error)?.error ?? null;

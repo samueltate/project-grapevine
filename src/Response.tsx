@@ -7,6 +7,7 @@ import {
   MagnifyingGlassIcon,
   MapPinIcon,
   PackageIcon,
+  MegaphoneIcon,
   ShieldCheckIcon,
   WarningIcon,
   WaveformIcon
@@ -48,7 +49,7 @@ function PartnerCard({ partner, selected, onSelect }: {
     <span className="partner-copy">
       <span className="partner-title"><strong>{partner.name}</strong>{partner.local_led && <em>Locally led</em>}</span>
       <span>{partner.summary}</span>
-      <span className="partner-tags">{partner.capabilities.map((capability) => <i key={capability}>{capability}</i>)}</span>
+      <span className="partner-tags">{partner.capabilities.map((capability) => <i key={capability}>{capability.replaceAll("_", " ")}</i>)}</span>
     </span>
     <span className="partner-evidence">
       <strong>{partner.response_status}</strong>
@@ -61,7 +62,7 @@ function PartnerCard({ partner, selected, onSelect }: {
 export default function ResponseApp() {
   const response = useResponse();
   const tools = useResponseWebMCPTools(response.actions);
-  const [need, setNeed] = useState<ResponseNeed>("water");
+  const [need, setNeed] = useState<ResponseNeed>("debris_clearance");
   const [area, setArea] = useState("Watauga Relief Corridor");
   const [localOnly, setLocalOnly] = useState(false);
   const [matches, setMatches] = useState<ResponsePartner[]>([]);
@@ -72,13 +73,15 @@ export default function ResponseApp() {
   const currentShortlist = bundle?.shortlists[0] ?? null;
   const currentRequest = bundle?.requests[0] ?? null;
   const fieldVerification = bundle?.field_verification ?? null;
-  const routeCleared = fieldVerification?.answer_value === "passable";
+  const evidenceReady = currentShortlist?.need === "debris_clearance"
+    ? ["blocked", "caution"].includes(fieldVerification?.answer_value ?? "")
+    : fieldVerification?.answer_value === "passable";
   const visiblePartners = matches.length ? matches : bundle?.partners ?? [];
   const selectedPartners = useMemo(() => visiblePartners.filter((partner) => selectedIds.includes(partner.id)), [visiblePartners, selectedIds]);
 
   useEffect(() => {
     if (!bundle || selectedIds.length) return;
-    setSelectedIds(bundle.partners.filter((partner) => partner.capabilities.includes("water") && partner.response_status === "active").slice(0, 2).map((partner) => partner.id));
+    setSelectedIds(bundle.partners.filter((partner) => partner.capabilities.includes("debris_clearance") && partner.response_status === "active").slice(0, 1).map((partner) => partner.id));
   }, [bundle, selectedIds.length]);
 
   async function find() {
@@ -114,7 +117,7 @@ export default function ResponseApp() {
       await response.actions.prepareCoordination({
         shortlist_id: currentShortlist.id,
         objective: bundle?.incident.operational_need ?? "Coordinate relief supplies.",
-        available_resources: "Two truckloads of bottled water and 40 temporary shelter kits at the Boone Staging Hub."
+        available_resources: "One chainsaw crew, utility vehicle, and Miles's verified work-site location."
       });
     } finally { setBusy(false); }
   }
@@ -125,7 +128,7 @@ export default function ResponseApp() {
     <Sidebar toolCount={tools.count} />
     <main className="dashboard-main response-main">
       <header className="operation-header response-header">
-        <div><p className="eyebrow">Demo 2 · From crisis page to response plan</p><h1>Resource Coordination</h1><p className="deck">Find the right partner, then verify the route before dispatch.</p></div>
+        <div><p className="eyebrow">Demo 2 · From evidence to coordinated action</p><h1>Resource Coordination</h1><p className="deck">Match verified field needs to crews and priority supplies.</p></div>
         <span className="demo-badge"><ShieldCheckIcon weight="fill" /> Simulated data</span>
       </header>
       {response.error && <p className="error" role="alert">{response.error}</p>}
@@ -133,7 +136,7 @@ export default function ResponseApp() {
       <section className="incident-strip">
         <div><span className="incident-icon"><WarningIcon weight="fill" /></span><span><small>Active coordination scenario</small><strong>{bundle.incident.name}</strong></span></div>
         <p>{bundle.incident.operational_need}</p>
-        <span className="incident-uncertainty"><WarningIcon /> Route status needs live verification</span>
+        <span className="incident-uncertainty"><WarningIcon /> Work site needs live verification</span>
       </section>
 
       <section className="response-layout">
@@ -162,12 +165,25 @@ export default function ResponseApp() {
           <section className={`plan-step ${currentRequest ? "warning" : ""}`}>
             <span>3</span><div><small>Coordination request</small><strong>{currentRequest ? "Prepared for approval" : "Not prepared"}</strong>{currentShortlist && !currentRequest && <button type="button" disabled={busy} onClick={() => void prepare()}><PackageIcon /> Prepare request</button>}{currentRequest && <p>{currentRequest.available_resources}</p>}</div>
           </section>
-          <section className={`plan-step verification ${fieldVerification ? (routeCleared ? "complete" : "warning") : currentRequest ? "active" : ""}`}>
+          <section className={`plan-step verification ${fieldVerification ? (evidenceReady ? "complete" : "warning") : currentRequest ? "active" : ""}`}>
             <span>4</span><div><small>Live ground truth</small><strong>{fieldVerification ? `Route reported ${fieldVerification.answer_value}` : "Verify before dispatch"}</strong><p>{fieldVerification ? `${fieldVerification.source_name}: ${fieldVerification.answer_note || "Structured field report received."}` : bundle.incident.uncertainty}</p><a href="/?handoff=response-plan"><MapPinIcon weight="fill" /> {fieldVerification ? "Review field verification" : "Open field verification"} <ArrowRightIcon /></a></div>
           </section>
-          {currentRequest?.status === "pending_approval" && <div className="coordination-approval"><ShieldCheckIcon weight="fill" /><div><strong>{routeCleared ? "Coordinator approval required" : "Dispatch approval locked"}</strong><p>{routeCleared ? "The route is verified. No partner is contacted until you approve." : "A current passable field report is required before dispatch approval."}</p></div><button type="button" disabled={!routeCleared} onClick={() => void response.actions.approveCoordination(currentRequest.id)}>Approve plan</button></div>}
+          {currentRequest?.status === "pending_approval" && <div className="coordination-approval"><ShieldCheckIcon weight="fill" /><div><strong>{evidenceReady ? "Coordinator approval required" : "Crew approval locked"}</strong><p>{evidenceReady ? "The obstruction is verified. No partner is contacted until you approve." : "A current obstruction report is required before crew approval."}</p></div><button type="button" disabled={!evidenceReady} onClick={() => void response.actions.approveCoordination(currentRequest.id)}>Approve plan</button></div>}
           {currentRequest?.status === "approved" && <div className="coordination-approved"><CheckCircleIcon weight="fill" /> Plan approved; field verification is still required before dispatch.</div>}
         </aside>
+      </section>
+
+      <section className="inventory-panel">
+        <div className="response-section-heading"><div><p className="eyebrow">Warehouse signals</p><h2>Supply gaps, not donation volume</h2></div><span>{bundle.inventory.filter((item) => item.status === "shortage").length} shortages</span></div>
+        <div className="inventory-grid">
+          {bundle.inventory.map((item) => <article key={item.id} className={`inventory-item ${item.status}`}>
+            <div><strong>{item.item_name}</strong><span>{item.status}</span></div>
+            <p>{item.field_signal}</p>
+            <small>{item.on_hand} {item.unit} on hand · {item.requested} requested</small>
+            {item.status === "shortage" && <button type="button" onClick={() => void response.actions.draftSupplyAppeal(item.id)}><MegaphoneIcon /> Draft appeal</button>}
+          </article>)}
+        </div>
+        {bundle.public_drafts[0] && <div className="appeal-draft"><div><span>Draft · not published</span><strong>Public supply appeal</strong></div><p>{bundle.public_drafts[0].copy}</p></div>}
       </section>
     </main>
   </div>;

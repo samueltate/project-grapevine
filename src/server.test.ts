@@ -15,7 +15,15 @@ function source(id: string, handle: string, last_active: string) {
     offered: '["route_status"]',
     online: 1,
     checked_in_at: last_active,
-    last_active
+    last_active,
+    display_name: handle,
+    source_profile: "human" as const,
+    channel_label: "Radio CH 3",
+    availability_label: "Available",
+    battery_percent: null,
+    mission_status: null,
+    image_url: null,
+    telemetry: "{}"
   };
 }
 

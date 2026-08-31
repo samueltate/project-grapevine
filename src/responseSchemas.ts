@@ -9,6 +9,7 @@ export const responseNeeds = [
   "medical",
   "transport",
   "communications"
+  ,"debris_clearance"
 ] as const;
 
 export type ResponseNeed = (typeof responseNeeds)[number];
@@ -52,6 +53,17 @@ export type CoordinationRequest = {
   approved_at: string | null;
 };
 
+export type SupplyInventoryItem = {
+  id: string; item_name: string; unit: string; on_hand: number; requested: number;
+  status: "shortage" | "adequate" | "surplus"; location: string;
+  field_signal: string; donation_url: string; updated_at: string;
+};
+
+export type PublicAppealDraft = {
+  id: string; item_id: string; channel: string; copy: string;
+  donation_url: string; status: "draft"; created_at: string;
+};
+
 export type ResponseBundle = {
   fictional: true;
   incident: {
@@ -73,6 +85,8 @@ export type ResponseBundle = {
     source_name: string;
     answered_at: string;
   };
+  inventory: SupplyInventoryItem[];
+  public_drafts: PublicAppealDraft[];
 };
 
 const requiredText = (label: string) => z.string().check(z.trim(), z.minLength(1, `${label} is required.`));
@@ -98,6 +112,12 @@ export const responseArgSchemas = {
     shortlist_id: requiredText("A shortlist ID"),
     objective: requiredText("An objective").check(z.maxLength(300)),
     available_resources: requiredText("Available resources").check(z.maxLength(300))
+  }),
+  inventory: z.object({
+    status: z.optional(z.enum(["shortage", "adequate", "surplus"]))
+  }),
+  appeal: z.object({
+    item_id: requiredText("An inventory item ID")
   })
 } as const;
 
@@ -106,7 +126,9 @@ export const responseToolSchemas = {
   findPartners: z.toJSONSchema(responseArgSchemas.findPartners, { target: "draft-07", io: "input" }),
   partnerDetails: z.toJSONSchema(responseArgSchemas.partnerDetails, { target: "draft-07", io: "input" }),
   shortlist: z.toJSONSchema(responseArgSchemas.shortlist, { target: "draft-07", io: "input" }),
-  coordination: z.toJSONSchema(responseArgSchemas.coordination, { target: "draft-07", io: "input" })
+  coordination: z.toJSONSchema(responseArgSchemas.coordination, { target: "draft-07", io: "input" }),
+  inventory: z.toJSONSchema(responseArgSchemas.inventory, { target: "draft-07", io: "input" }),
+  appeal: z.toJSONSchema(responseArgSchemas.appeal, { target: "draft-07", io: "input" })
 } as const;
 
 export function parseResponseArgs<Schema extends z.ZodMiniType>(schema: Schema, input: unknown): z.output<Schema> {

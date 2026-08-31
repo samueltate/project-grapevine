@@ -79,17 +79,16 @@ export const getResponseArgsSchema = z.object({
   )
 });
 
-export const rateResponseArgsSchema = z.object({
-  session_id: sessionIdSchema.check(
-    z.describe("The answered session ID to rate.")
-  ),
-  stars: z
-    .number()
-    .check(
-      z.minimum(1),
-      z.maximum(5),
-      z.describe("Whole-star rating from 1 to 5.")
-    )
+export const getDroneStatusArgsSchema = z.object({
+  source_id: sourceIdSchema.check(z.describe("The drone source ID returned by find_available_sources."))
+});
+
+export const prepareDroneMissionArgsSchema = z.object({
+  source_id: sourceIdSchema,
+  target_name: z.string().check(z.trim(), z.minLength(1), z.maxLength(120)),
+  objective: z.string().check(z.trim(), z.minLength(1), z.maxLength(240)),
+  target_lat: z.optional(z.number()),
+  target_lng: z.optional(z.number())
 });
 
 export const toolInputSchemas = {
@@ -109,7 +108,11 @@ export const toolInputSchemas = {
     target: "draft-07",
     io: "input"
   }),
-  rateResponse: z.toJSONSchema(rateResponseArgsSchema, {
+  getDroneStatus: z.toJSONSchema(getDroneStatusArgsSchema, {
+    target: "draft-07",
+    io: "input"
+  }),
+  prepareDroneMission: z.toJSONSchema(prepareDroneMissionArgsSchema, {
     target: "draft-07",
     io: "input"
   })
@@ -146,6 +149,27 @@ export type Source = {
   checked_in_at: string;
   last_active: string;
   distance_m?: number;
+  display_name: string;
+  source_profile: "human" | "sensor" | "drone";
+  channel_label: string;
+  availability_label: string;
+  battery_percent: number | null;
+  mission_status: string | null;
+  image_url: string | null;
+  telemetry: Record<string, string | number>;
+};
+
+export type DroneMission = {
+  id: string; source_id: string; target_name: string; objective: string;
+  target_lat: number | null; target_lng: number | null;
+  status: "pending_approval" | "completed"; result_note: string | null;
+  image_url: string | null; created_at: string; approved_at: string | null;
+};
+
+export type DroneStatus = {
+  fictional: true;
+  source: Source;
+  observation: { classification: string; confidence: number; image_url: string | null };
 };
 
 export type SessionStatus =

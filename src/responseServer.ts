@@ -46,13 +46,16 @@ type DbFieldVerification = {
   source_name: string;
 };
 
+type DbInventory = { id: string; item_name: string; unit: string; on_hand: number; requested: number; status: "shortage" | "adequate" | "surplus"; location: string; field_signal: string; donation_url: string; updated_at: string };
+type DbDraft = { id: string; item_id: string; channel: string; copy: string; donation_url: string; status: "draft"; created_at: string };
+
 const incident = {
   id: "helene-watauga-reference",
   name: "Watauga County Relief Coordination",
   area: "Watauga Relief Corridor",
-  operational_need: "Move water and temporary shelter supplies from the Boone Staging Hub to Mountain Shelter B.",
-  published_status: "A regional directory identifies capable response partners and an earlier route update says the corridor is passable.",
-  uncertainty: "The route update may be stale. Current passability must be confirmed by a nearby human or sensor before dispatch.",
+  operational_need: "Clear a fallen tree blocking access to Mountain Shelter B, then coordinate priority supplies.",
+  published_status: "Miles reported a fallen tree; simulated aerial evidence can confirm the obstruction before a crew is assigned.",
+  uncertainty: "The obstruction and exact work site must be confirmed before a debris-clearance crew is dispatched.",
   updated_at: "2030-09-28T13:30:00.000Z"
 };
 
@@ -95,7 +98,7 @@ function presentRequest(request: DbCoordinationRequest) {
 }
 
 async function getBundle(env: Env) {
-  const [partners, shortlists, requests, fieldVerification] = await Promise.all([
+  const [partners, shortlists, requests, fieldVerification, inventory, drafts] = await Promise.all([
     env.DB.prepare("SELECT * FROM response_partners ORDER BY local_led DESC, response_status, name").all<DbPartner>(),
     env.DB.prepare("SELECT * FROM response_shortlists ORDER BY created_at DESC LIMIT 6").all<DbShortlist>(),
     env.DB.prepare("SELECT * FROM response_coordination_requests ORDER BY created_at DESC LIMIT 6").all<DbCoordinationRequest>(),
@@ -103,9 +106,12 @@ async function getBundle(env: Env) {
       sources.handle AS source_name FROM sessions JOIN sources ON sources.id = sessions.source_id
       WHERE sessions.place_id = 'demo-watauga-relief-corridor'
         AND sessions.request_type = 'route_status'
+        AND sources.source_profile = 'human'
         AND sessions.status IN ('answered', 'rated')
         AND sessions.answer_value IS NOT NULL
-      ORDER BY sessions.answered_at DESC LIMIT 1`).first<DbFieldVerification>()
+      ORDER BY sessions.answered_at DESC LIMIT 1`).first<DbFieldVerification>(),
+    env.DB.prepare("SELECT * FROM response_inventory ORDER BY CASE status WHEN 'shortage' THEN 0 WHEN 'adequate' THEN 1 ELSE 2 END, item_name").all<DbInventory>(),
+    env.DB.prepare("SELECT * FROM response_public_drafts ORDER BY created_at DESC LIMIT 6").all<DbDraft>()
   ]);
   return {
     fictional: true as const,
@@ -119,7 +125,9 @@ async function getBundle(env: Env) {
       answer_note: fieldVerification.answer_note,
       source_name: fieldVerification.source_name.replaceAll("-", " "),
       answered_at: fieldVerification.answered_at
-    } : null
+    } : null,
+    inventory: inventory.results,
+    public_drafts: drafts.results
   };
 }
 
@@ -200,18 +208,52 @@ async function prepareCoordination(request: Request, env: Env) {
 }
 
 async function approveCoordination(env: Env, requestId: string) {
-  const verification = await env.DB.prepare(`SELECT answer_value FROM sessions
-    WHERE place_id = 'demo-watauga-relief-corridor' AND request_type = 'route_status'
-      AND status IN ('answered', 'rated') AND answer_value IS NOT NULL
-    ORDER BY answered_at DESC LIMIT 1`).first<{ answer_value: string }>();
-  if (verification?.answer_value !== "passable") {
-    return json({ error: "A current passable field report is required before dispatch approval." }, 409);
+  const requestItem = await env.DB.prepare(`SELECT response_coordination_requests.*, response_shortlists.need AS need
+    FROM response_coordination_requests JOIN response_shortlists ON response_shortlists.id = response_coordination_requests.shortlist_id
+    WHERE response_coordination_requests.id = ?`).bind(requestId).first<DbCoordinationRequest & { need: ResponseNeed }>();
+  if (!requestItem) return json({ error: "Coordination request was not found." }, 404);
+  const verification = await env.DB.prepare(`SELECT sessions.answer_value FROM sessions
+    JOIN sources ON sources.id = sessions.source_id
+    WHERE sessions.place_id = 'demo-watauga-relief-corridor' AND sessions.request_type = 'route_status'
+      AND sources.source_profile = 'human'
+      AND sessions.status IN ('answered', 'rated') AND sessions.answer_value IS NOT NULL
+    ORDER BY sessions.answered_at DESC LIMIT 1`).first<{ answer_value: string }>();
+  const evidenceReady = requestItem.need === "debris_clearance"
+    ? ["blocked", "caution"].includes(verification?.answer_value ?? "")
+    : verification?.answer_value === "passable";
+  if (!evidenceReady) {
+    return json({ error: requestItem.need === "debris_clearance" ? "A current obstruction report is required before crew approval." : "A current passable field report is required before dispatch approval." }, 409);
   }
   const timestamp = now();
   await env.DB.prepare("UPDATE response_coordination_requests SET status = 'approved', approved_at = ? WHERE id = ? AND status = 'pending_approval'")
     .bind(timestamp, requestId).run();
   const item = await env.DB.prepare("SELECT * FROM response_coordination_requests WHERE id = ?").bind(requestId).first<DbCoordinationRequest>();
   return item ? json({ request: presentRequest(item), external_contact_made: false, result: "Coordination plan approved for the simulation. Field verification remains required before dispatch." }) : json({ error: "Coordination request was not found." }, 404);
+}
+
+async function getInventory(request: Request, env: Env) {
+  const body = await readJson(request);
+  const status = typeof body.status === "string" ? body.status : "";
+  const result = status
+    ? await env.DB.prepare("SELECT * FROM response_inventory WHERE status = ? ORDER BY item_name").bind(status).all<DbInventory>()
+    : await env.DB.prepare("SELECT * FROM response_inventory ORDER BY item_name").all<DbInventory>();
+  return json({ fictional: true, inventory: result.results });
+}
+
+async function draftAppeal(request: Request, env: Env) {
+  const body = await readJson(request);
+  const itemId = typeof body.item_id === "string" ? body.item_id : "";
+  const item = await env.DB.prepare("SELECT * FROM response_inventory WHERE id = ?").bind(itemId).first<DbInventory>();
+  if (!item) return json({ error: "Inventory item was not found." }, 404);
+  if (item.status !== "shortage") return json({ error: "Public appeals are only drafted for verified shortages in this simulation." }, 409);
+  const draft: DbDraft = {
+    id: id("draft"), item_id: item.id, channel: "social",
+    copy: `Watauga County relief teams need ${item.item_name.toLowerCase()}. ${item.field_signal} Current stock is ${item.on_hand} ${item.unit} against a request for ${item.requested}. Help fill this verified gap: ${item.donation_url}`,
+    donation_url: item.donation_url, status: "draft", created_at: now()
+  };
+  await env.DB.prepare("INSERT INTO response_public_drafts (id,item_id,channel,copy,donation_url,status,created_at) VALUES (?,?,?,?,?,?,?)")
+    .bind(draft.id,draft.item_id,draft.channel,draft.copy,draft.donation_url,draft.status,draft.created_at).run();
+  return json({ draft, review_required: true, published: false });
 }
 
 export async function handleResponseRequest(request: Request, env: Env) {
@@ -227,6 +269,8 @@ export async function handleResponseRequest(request: Request, env: Env) {
   }
   if (request.method === "POST" && path === "/api/response/shortlists") return createShortlist(request, env);
   if (request.method === "POST" && path === "/api/response/requests") return prepareCoordination(request, env);
+  if (request.method === "POST" && path === "/api/response/inventory") return getInventory(request, env);
+  if (request.method === "POST" && path === "/api/response/appeals") return draftAppeal(request, env);
   const approvalMatch = path.match(/^\/api\/response\/requests\/([^/]+)\/approve$/);
   if (request.method === "POST" && approvalMatch) return approveCoordination(env, approvalMatch[1]);
   return json({ error: "Response coordination endpoint not found." }, 404);

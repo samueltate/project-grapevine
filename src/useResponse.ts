@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { CoordinationRequest, ResponseBundle, ResponseNeed, ResponsePartner, ResponseShortlist } from "./responseSchemas";
+import type { CoordinationRequest, PublicAppealDraft, ResponseBundle, ResponseNeed, ResponsePartner, ResponseShortlist, SupplyInventoryItem } from "./responseSchemas";
 
 async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
@@ -19,6 +19,8 @@ export type ResponseActions = {
   createShortlist: (input: { title: string; need: ResponseNeed; area: string; partner_ids: string[]; rationale: string }) => Promise<ResponseShortlist>;
   prepareCoordination: (input: { shortlist_id: string; objective: string; available_resources: string }) => Promise<{ request: CoordinationRequest; approval_required: true; recommended_next_step: Record<string, string> }>;
   approveCoordination: (requestId: string) => Promise<CoordinationRequest>;
+  getSupplyInventory: (status?: SupplyInventoryItem["status"]) => Promise<{ inventory: SupplyInventoryItem[] }>;
+  draftSupplyAppeal: (itemId: string) => Promise<PublicAppealDraft>;
 };
 
 export function useResponse() {
@@ -55,10 +57,16 @@ export function useResponse() {
     await refresh();
     return result.request;
   }, [refresh]);
+  const getSupplyInventory = useCallback((status?: SupplyInventoryItem["status"]) => api<{ inventory: SupplyInventoryItem[] }>("/api/response/inventory", { method: "POST", body: JSON.stringify({ status }) }), []);
+  const draftSupplyAppeal = useCallback(async (itemId: string) => {
+    const result = await api<{ draft: PublicAppealDraft }>("/api/response/appeals", { method: "POST", body: JSON.stringify({ item_id: itemId }) });
+    await refresh();
+    return result.draft;
+  }, [refresh]);
 
   const actions = useMemo<ResponseActions>(() => ({
-    refresh, getIncidentBrief, findPartners, getPartnerDetails, createShortlist, prepareCoordination, approveCoordination
-  }), [refresh, getIncidentBrief, findPartners, getPartnerDetails, createShortlist, prepareCoordination, approveCoordination]);
+    refresh, getIncidentBrief, findPartners, getPartnerDetails, createShortlist, prepareCoordination, approveCoordination, getSupplyInventory, draftSupplyAppeal
+  }), [refresh, getIncidentBrief, findPartners, getPartnerDetails, createShortlist, prepareCoordination, approveCoordination, getSupplyInventory, draftSupplyAppeal]);
 
   return { bundle, error, setError, actions };
 }

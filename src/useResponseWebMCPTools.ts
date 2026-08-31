@@ -59,6 +59,26 @@ export function useResponseWebMCPTools(actions: ResponseActions): ResponseWebMCP
         const input = parseResponseArgs(responseArgSchemas.coordination, args);
         return actions.prepareCoordination(input);
       }
+    },
+    {
+      name: "get_supply_inventory",
+      description: "Read simulated relief inventory and distinguish verified shortages, adequate stock, and oversupply.",
+      inputSchema: responseToolSchemas.inventory,
+      annotations: readOnly,
+      async execute(args) {
+        const input = parseResponseArgs(responseArgSchemas.inventory, args);
+        return actions.getSupplyInventory(input.status);
+      }
+    },
+    {
+      name: "draft_supply_appeal",
+      description: "Create a reviewable social appeal for a verified simulated shortage. This saves a draft and never publishes it.",
+      inputSchema: responseToolSchemas.appeal,
+      annotations: controlled,
+      async execute(args) {
+        const input = parseResponseArgs(responseArgSchemas.appeal, args);
+        return actions.draftSupplyAppeal(input.item_id);
+      }
     }
   ], [actions]);
 

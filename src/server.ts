@@ -28,6 +28,21 @@ type DbSource = {
   online: number;
   checked_in_at: string;
   last_active: string;
+  display_name: string;
+  source_profile: "human" | "sensor" | "drone";
+  channel_label: string;
+  availability_label: string;
+  battery_percent: number | null;
+  mission_status: string | null;
+  image_url: string | null;
+  telemetry: string;
+};
+
+type DbDroneMission = {
+  id: string; source_id: string; target_name: string; objective: string;
+  target_lat: number | null; target_lng: number | null;
+  status: "pending_approval" | "completed"; result_note: string | null;
+  image_url: string | null; created_at: string; approved_at: string | null;
 };
 
 type DbSession = {
@@ -125,7 +140,15 @@ function presentSource(source: DbSource, distance_m = 0) {
     online: Boolean(source.online),
     checked_in_at: source.checked_in_at,
     last_active: source.last_active,
-    distance_m
+    distance_m,
+    display_name: source.display_name || source.handle,
+    source_profile: source.source_profile,
+    channel_label: source.channel_label,
+    availability_label: source.availability_label,
+    battery_percent: source.battery_percent,
+    mission_status: source.mission_status,
+    image_url: source.image_url,
+    telemetry: (() => { try { return JSON.parse(source.telemetry || "{}"); } catch { return {}; } })()
   };
 }
 
@@ -271,6 +294,10 @@ async function handleCheckIn(request: Request, env: Env) {
     typeof body.handle === "string" && body.handle.trim()
       ? body.handle.trim()
       : "field-responder";
+  const displayName = typeof body.display_name === "string" && body.display_name.trim()
+    ? body.display_name.trim() : handle;
+  const channelLabel = typeof body.channel_label === "string" && body.channel_label.trim()
+    ? body.channel_label.trim() : "Radio CH 3";
   const offered = Array.isArray(body.offered)
     ? body.offered.filter((item): item is RequestType =>
         requestTypes.includes(item as RequestType)
@@ -327,20 +354,25 @@ async function handleCheckIn(request: Request, env: Env) {
   await env.DB.prepare(
     `INSERT INTO sources (
       id, handle, trust_score, place_id, location_name, source_kind,
-      verification_label, lat, lng, offered, online, checked_in_at, last_active
-    ) VALUES (?, ?, ?, ?, ?, 'human', 'Field responder check-in', ?, ?, ?, 1, ?, ?)
+      verification_label, lat, lng, offered, online, checked_in_at, last_active,
+      display_name, source_profile, channel_label, availability_label
+    ) VALUES (?, ?, ?, ?, ?, 'human', 'Responder check-in confirmed', ?, ?, ?, 1, ?, ?, ?, 'human', ?, 'Available')
     ON CONFLICT(id) DO UPDATE SET
       handle = excluded.handle,
       place_id = excluded.place_id,
       location_name = excluded.location_name,
       source_kind = 'human',
-      verification_label = 'Field responder check-in',
+      verification_label = 'Responder check-in confirmed',
       lat = excluded.lat,
       lng = excluded.lng,
       offered = excluded.offered,
       online = 1,
       checked_in_at = excluded.checked_in_at,
-      last_active = excluded.last_active`
+      last_active = excluded.last_active,
+      display_name = excluded.display_name,
+      source_profile = 'human',
+      channel_label = excluded.channel_label,
+      availability_label = 'Available'`
   )
     .bind(
       sourceId,
@@ -352,7 +384,9 @@ async function handleCheckIn(request: Request, env: Env) {
       lng,
       JSON.stringify(offered),
       timestamp,
-      timestamp
+      timestamp,
+      displayName,
+      channelLabel
     )
     .run();
 
@@ -432,6 +466,16 @@ async function getSession(env: Env, idValue: string) {
 }
 
 function machineResponse(requestType: RequestType, sourceHandle: string) {
+  if (sourceHandle.includes("recon")) {
+    const droneResponses: Record<RequestType, { value: string; note: string }> = {
+      route_status: { value: "blocked", note: "Simulated aerial observation: a fallen tree blocks both lanes east of Miles's check-in." },
+      flood_depth: { value: "unclear", note: "The recon drone does not provide calibrated flood-depth telemetry." },
+      supply_access: { value: "inaccessible", note: "The direct vehicle route is obstructed by a fallen tree." },
+      hazard_report: { value: "debris", note: "Simulated image classification detects a large fallen tree across both lanes with 94% confidence." },
+      custom: { value: "yes", note: "Latest simulated aerial image and telemetry are available in the drone status panel." }
+    };
+    return droneResponses[requestType];
+  }
   if (sourceHandle.includes("camera")) {
     const cameraResponses: Record<RequestType, { value: string; note: string }> = {
       route_status: {
@@ -500,10 +544,10 @@ async function handleApprove(env: Env, sessionId: string) {
     const automated = machineResponse(row.request_type, source.handle);
     await env.DB.prepare(
       `UPDATE sessions
-       SET status = 'answered', answer_value = ?, answer_note = ?, answered_at = ?
+       SET status = 'answered', answer_value = ?, answer_note = ?, photo_url = ?, answered_at = ?
        WHERE id = ?`
     )
-      .bind(automated.value, automated.note, now(), sessionId)
+      .bind(automated.value, automated.note, source.image_url, now(), sessionId)
       .run();
   }
 
@@ -588,6 +632,49 @@ async function handleDriver(env: Env, sourceId: string) {
   });
 }
 
+async function handleDroneStatus(env: Env, sourceId: string) {
+  const source = await env.DB.prepare("SELECT * FROM sources WHERE id = ? AND source_profile = 'drone'").bind(sourceId).first<DbSource>();
+  if (!source) return json({ error: "Recon drone was not found." }, 404);
+  const telemetry = (() => { try { return JSON.parse(source.telemetry || "{}"); } catch { return {}; } })();
+  return json({ fictional: true, source: presentSource(source), observation: {
+    classification: telemetry.classification ?? "No current classification",
+    confidence: telemetry.confidence ?? 0,
+    image_url: source.image_url
+  }});
+}
+
+async function prepareDroneMission(request: Request, env: Env) {
+  const body = await readJson(request) as Record<string, unknown>;
+  const sourceId = typeof body.source_id === "string" ? body.source_id : "";
+  const source = await env.DB.prepare("SELECT id FROM sources WHERE id = ? AND source_profile = 'drone'").bind(sourceId).first();
+  if (!source) return json({ error: "Recon drone was not found." }, 404);
+  const mission: DbDroneMission = {
+    id: id("mission"), source_id: sourceId,
+    target_name: typeof body.target_name === "string" ? body.target_name.trim() : "Mountain Shelter B",
+    objective: typeof body.objective === "string" ? body.objective.trim() : "Capture updated aerial evidence.",
+    target_lat: typeof body.target_lat === "number" ? body.target_lat : 36.2193,
+    target_lng: typeof body.target_lng === "number" ? body.target_lng : -81.6804,
+    status: "pending_approval", result_note: null, image_url: null, created_at: now(), approved_at: null
+  };
+  await env.DB.prepare(`INSERT INTO drone_missions (id,source_id,target_name,objective,target_lat,target_lng,status,result_note,image_url,created_at,approved_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?)`).bind(...Object.values(mission)).run();
+  return json({ mission, approval_required: true, real_device_moved: false });
+}
+
+async function approveDroneMission(env: Env, missionId: string) {
+  const mission = await env.DB.prepare("SELECT * FROM drone_missions WHERE id = ?").bind(missionId).first<DbDroneMission>();
+  if (!mission) return json({ error: "Drone mission was not found." }, 404);
+  const timestamp = now();
+  await env.DB.batch([
+    env.DB.prepare("UPDATE drone_missions SET status='completed', result_note=?, image_url=?, approved_at=? WHERE id=? AND status='pending_approval'")
+      .bind("Simulated reposition complete. Fallen tree confirmed across both lanes.", "/drone-tree-obstruction.png", timestamp, missionId),
+    env.DB.prepare("UPDATE sources SET lat=?, lng=?, battery_percent=61, mission_status='Survey complete', availability_label='Returning', last_active=? WHERE id=?")
+      .bind(mission.target_lat, mission.target_lng, timestamp, mission.source_id)
+  ]);
+  const updated = await env.DB.prepare("SELECT * FROM drone_missions WHERE id = ?").bind(missionId).first<DbDroneMission>();
+  return json({ mission: updated, simulated_reposition: true, real_device_moved: false });
+}
+
 async function handleRequest(request: Request, env: Env) {
   const url = new URL(request.url);
   const path = url.pathname;
@@ -607,6 +694,11 @@ async function handleRequest(request: Request, env: Env) {
   if (request.method === "GET" && path === "/api/driver") {
     return handleDriver(env, url.searchParams.get("source_id") ?? "");
   }
+  const droneMatch = path.match(/^\/api\/drones\/([^/]+)$/);
+  if (request.method === "GET" && droneMatch) return handleDroneStatus(env, droneMatch[1]);
+  if (request.method === "POST" && path === "/api/drone-missions") return prepareDroneMission(request, env);
+  const missionMatch = path.match(/^\/api\/drone-missions\/([^/]+)\/approve$/);
+  if (request.method === "POST" && missionMatch) return approveDroneMission(env, missionMatch[1]);
   if (request.method === "POST" && path === "/api/sessions") {
     return handleCreateSession(request, env);
   }

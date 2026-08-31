@@ -3,6 +3,7 @@ import {
   CheckCircleIcon,
   ClockIcon,
   CrosshairIcon,
+  DroneIcon,
   GaugeIcon,
   HouseIcon,
   ListChecksIcon,
@@ -10,7 +11,6 @@ import {
   NavigationArrowIcon,
   RadioIcon,
   RadioButtonIcon,
-  StarIcon,
   UsersThreeIcon,
   WaveformIcon
 } from "@phosphor-icons/react";
@@ -66,10 +66,12 @@ function requestLabel(value: RequestType) {
 }
 
 function sourceKindLabel(source: Source) {
-  return source.source_kind === "system" ? "Infrastructure sensor" : "Field team";
+  if (source.source_profile === "drone") return "Recon drone";
+  return source.source_profile === "sensor" ? "Infrastructure sensor" : "Field responder";
 }
 
 function sourceDisplayName(source: Source) {
+  if (source.display_name) return source.display_name;
   const names: Record<string, string> = {
     "demo-creek-gauge-7": "Creek depth sensor",
     "watauga-road-camera-2": "Road conditions camera",
@@ -139,19 +141,20 @@ function SourceMap({
           <button
             key={source.id}
             type="button"
-            className={`map-marker ${source.source_kind} ${selectedSource?.id === source.id ? "selected" : ""}`}
+            className={`map-marker ${source.source_profile} ${selectedSource?.id === source.id ? "selected" : ""}`}
             style={markerPosition(source)}
             aria-label={`Locate ${sourceDisplayName(source)}`}
             title={sourceDisplayName(source)}
             onClick={() => onSelect(source)}
           >
-            {source.source_kind === "system" ? "S" : "H"}
+            {source.source_profile === "drone" ? "D" : source.source_profile === "sensor" ? "S" : "H"}
           </button>
         ))}
       </div>
       <div className="map-legend" aria-label="Map legend">
         <span><i className="human" /> Human</span>
         <span><i className="system" /> Sensor</span>
+        <span><i className="drone" /> Drone</span>
       </div>
       <div className="map-caption">
         <MapPinIcon weight="fill" /> Boone and the Watauga relief corridor
@@ -175,7 +178,7 @@ function SourceRoster({
     <div className="source-roster">
       <div className="roster-head" aria-hidden="true">
         <span>Source</span><span>Verification</span><span>Signals</span>
-        <span>Updated</span><span>Quality</span><span>Actions</span>
+        <span>Updated</span><span>Availability</span><span>Actions</span>
       </div>
       {sources.length > 0 ? sources.map((source) => (
         <div
@@ -183,8 +186,8 @@ function SourceRoster({
           key={source.id}
         >
           <div className="roster-source" data-label="Source">
-            <span className={`source-symbol ${source.source_kind}`}>
-              {source.source_kind === "system" ? <GaugeIcon /> : <UsersThreeIcon />}
+            <span className={`source-symbol ${source.source_profile}`}>
+              {source.source_profile === "drone" ? <DroneIcon /> : source.source_profile === "sensor" ? <GaugeIcon /> : <UsersThreeIcon />}
             </span>
             <span><strong>{sourceDisplayName(source)}</strong><small>{sourceKindLabel(source)}</small></span>
           </div>
@@ -199,8 +202,8 @@ function SourceRoster({
             <strong>{minutesAgo(source.last_active)}</strong>
             <small>{source.distance_m ? `${source.distance_m} m away` : "on corridor"}</small>
           </div>
-          <div className="quality" data-label="Quality">
-            <strong>{Math.round(source.trust_score * 100)}%</strong><span>reliable</span>
+          <div className="quality" data-label="Availability">
+            <strong>{source.source_profile === "drone" ? `${source.battery_percent}% battery` : source.availability_label}</strong><span>{source.mission_status || source.channel_label}</span>
           </div>
           <div className="roster-actions" data-label="Actions">
             <button
@@ -222,12 +225,10 @@ function SourceRoster({
 
 function SessionPanel({
   session,
-  onApprove,
-  onRate
+  onApprove
 }: {
   session: Session | null;
   onApprove: (id: string) => void;
-  onRate: (id: string, stars: number) => void;
 }) {
   if (!session) {
     return (
@@ -271,21 +272,7 @@ function SessionPanel({
           <span className="answer-label">Answer received</span>
           <strong>{session.answer_value}</strong>
           {session.answer_note && <p>{session.answer_note}</p>}
-          <div className="rating-row" aria-label="Source quality rating">
-            <span>How useful was this answer?</span>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                aria-label={`Rate ${star} stars`}
-                onClick={() => onRate(session.id, star)}
-              >
-                <StarIcon
-                  weight={session.stars && session.stars >= star ? "fill" : "regular"}
-                />
-              </button>
-            ))}
-          </div>
+          {session.photo_url && <img className="answer-evidence" src={session.photo_url} alt="Simulated aerial evidence of the reported obstruction" />}
         </div>
       )}
     </section>
@@ -356,6 +343,7 @@ function Board() {
 
   function selectSource(source: Source) {
     grapevine.setSelectedSource(source);
+    if (source.source_profile === "drone") void grapevine.actions.getDroneStatus(source.id);
     if (!source.offered.includes(requestType)) {
       const nextType = source.offered[0] ?? "custom";
       setRequestType(nextType);
@@ -481,6 +469,19 @@ function Board() {
           </aside>
         </section>
 
+        {selectedSource?.source_profile === "drone" && grapevine.droneStatus && <section className="drone-panel">
+          <img src={grapevine.droneStatus.observation.image_url || "/drone-tree-obstruction.png"} alt="Simulated drone view of a fallen tree blocking the relief route" />
+          <div>
+            <p className="eyebrow">Simulated aerial observation</p>
+            <h2>{grapevine.droneStatus.observation.classification}</h2>
+            <div className="drone-metrics"><span><strong>{selectedSource.battery_percent}%</strong> battery</span><span><strong>{selectedSource.telemetry.connection}</strong> link</span><span><strong>{Math.round(grapevine.droneStatus.observation.confidence * 100)}%</strong> confidence</span></div>
+            <p>{selectedSource.mission_status}. No real aircraft is connected.</p>
+            {!grapevine.droneMission && <button type="button" onClick={() => void grapevine.actions.prepareDroneMission({ source_id: selectedSource.id, target_name: "Mountain Shelter B access road", objective: "Confirm Miles's fallen-tree report and capture current route evidence." })}>Prepare reposition</button>}
+            {grapevine.droneMission?.status === "pending_approval" && <div className="mission-approval"><span>Mission staged. Human approval required.</span><button type="button" onClick={() => void grapevine.actions.approveDroneMission(grapevine.droneMission!.id)}>Approve simulated mission</button></div>}
+            {grapevine.droneMission?.status === "completed" && <p className="mission-complete"><CheckCircleIcon weight="fill" /> Survey complete. Obstruction confirmed.</p>}
+          </div>
+        </section>}
+
         <section className="roster-panel">
           <div className="panel-title roster-title">
             <div><p className="eyebrow">Available network</p><h2>People and sensors nearby</h2></div>
@@ -524,7 +525,6 @@ function Board() {
           <SessionPanel
             session={grapevine.activeSession}
             onApprove={(id) => void grapevine.actions.approveSession(id)}
-            onRate={(id, stars) => void grapevine.actions.rateResponse(id, stars)}
           />
           {selectedSource?.source_kind === "human" && <a className="field-link" href={`/drive?source_id=${selectedSource.id}`}>Open field inbox for this responder</a>}
         </aside>
@@ -535,7 +535,9 @@ function Board() {
 
 function Driver() {
   const grapevine = useGrapevine();
-  const [handle, setHandle] = useState("boone-field-team");
+  const [name, setName] = useState("Miles Carter");
+  const [handle, setHandle] = useState("miles828");
+  const [channel, setChannel] = useState("Radio CH 3");
   const [place, setPlace] = useState("Watauga Relief Corridor");
   const [sourceId, setSourceId] = useState(
     () =>
@@ -555,6 +557,8 @@ function Driver() {
     const source = await grapevine.actions.checkIn({
       source_id: sourceId || undefined,
       handle,
+      display_name: name,
+      channel_label: channel,
       place_id: seededSpot?.place_id ?? "demo-watauga-relief-corridor",
       location_name: place || seededSpot?.name || "Watauga Relief Corridor",
       address: seededSpot?.address,
@@ -582,7 +586,9 @@ function Driver() {
     const result = await grapevine.actions.loadDriver(sourceId);
     setSessions(result.sessions);
     if (result.source) {
+      setName(result.source.display_name);
       setHandle(result.source.handle);
+      setChannel(result.source.channel_label);
       setPlace(result.source.location_name);
     }
   }
@@ -616,8 +622,16 @@ function Driver() {
           <div className="phone">
         <section className="phone-panel">
           <label>
-            Call sign
+            Name
+            <input value={name} onChange={(event) => setName(event.target.value)} />
+          </label>
+          <label>
+            Username / call sign
             <input value={handle} onChange={(event) => setHandle(event.target.value)} />
+          </label>
+          <label>
+            Radio channel
+            <input value={channel} onChange={(event) => setChannel(event.target.value)} />
           </label>
           <label>
             Operational area
@@ -630,7 +644,7 @@ function Driver() {
             <button type="button" onClick={checkIn}>Go online</button>
           </div>
           <p className="muted">{message}</p>
-          {sourceId && <p className="source-id">Connected as {handle}</p>}
+          {sourceId && <p className="source-id">Connected as {name} · {handle} · {channel}</p>}
         </section>
 
         <section className="phone-panel">
