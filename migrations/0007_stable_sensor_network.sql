@@ -7,14 +7,14 @@ INSERT INTO sources (
     'demo-watauga-relief-corridor', 'Watauga Relief Corridor', 'system',
     'Authenticated creek-depth telemetry', 36.2140, -81.6700,
     '["flood_depth","route_status","hazard_report"]',
-    1, '2030-09-28T13:38:00.000Z', '2030-09-28T13:38:00.000Z'
+    1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
   ),
   (
     'src-road-camera', 'watauga-road-camera-2', 0.92,
     'demo-watauga-relief-corridor', 'Watauga Relief Corridor', 'system',
     'Roadside image classification', 36.2205, -81.6668,
     '["route_status","supply_access","hazard_report"]',
-    1, '2030-09-28T13:39:00.000Z', '2030-09-28T13:39:00.000Z'
+    1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
   )
 ON CONFLICT(id) DO UPDATE SET
   handle = excluded.handle,

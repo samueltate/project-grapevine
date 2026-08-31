@@ -97,6 +97,15 @@ function normalize(value: string) {
   return value.trim().toLowerCase();
 }
 
+function isoTimestamp(value: string): string;
+function isoTimestamp(value: null): null;
+function isoTimestamp(value: string | null): string | null {
+  if (!value) return value;
+  return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(value)
+    ? `${value.replace(" ", "T")}Z`
+    : value;
+}
+
 function parseOffered(value: string): RequestType[] {
   try {
     const offered = JSON.parse(value);
@@ -120,7 +129,7 @@ function presentSpot(spot: DbSpot) {
     lat: spot.lat,
     lng: spot.lng,
     is_seeded: Boolean(spot.is_seeded),
-    as_of: spot.updated_at
+    as_of: isoTimestamp(spot.updated_at)
   };
 }
 
@@ -144,8 +153,8 @@ function presentSource(source: DbSource, distance_m = 0) {
     lng: source.lng,
     offered: parseOffered(source.offered),
     online: Boolean(source.online),
-    checked_in_at: source.checked_in_at,
-    last_active: source.last_active,
+    checked_in_at: isoTimestamp(source.checked_in_at),
+    last_active: isoTimestamp(source.last_active),
     distance_m,
     display_name: source.display_name || source.handle,
     source_profile: source.source_profile,
@@ -188,8 +197,8 @@ function presentSession(session: DbSession, source?: DbSource) {
     answer_note: session.answer_note,
     photo_url: session.photo_url,
     stars: session.stars,
-    created_at: session.created_at,
-    answered_at: session.answered_at,
+    created_at: isoTimestamp(session.created_at),
+    answered_at: isoTimestamp(session.answered_at),
     source: source ? presentSource(source) : undefined
   };
 }
@@ -265,16 +274,15 @@ async function handleFindSources(request: Request, env: Env) {
 
   const rows = await env.DB.prepare("SELECT * FROM sources WHERE online = 1").all<DbSource>();
   const sources = collapseSourceIdentities(rows.results)
-    .map((source) =>
-      presentSource(
-        source,
-        source.place_id === spot.place_id
-          ? 0
-          : distanceMeters(spot, { lat: source.lat, lng: source.lng })
-      )
-    )
-    .filter((source) => source.place_id === spot.place_id || source.distance_m <= radius)
-    .sort((a, b) => a.distance_m - b.distance_m || b.trust_score - a.trust_score);
+    .map((source) => ({
+      source,
+      distance_m: source.place_id === spot.place_id
+        ? 0
+        : distanceMeters(spot, { lat: source.lat, lng: source.lng })
+    }))
+    .filter(({ source, distance_m }) => source.place_id === spot.place_id || distance_m <= radius)
+    .sort((a, b) => a.distance_m - b.distance_m || b.source.trust_score - a.source.trust_score)
+    .map(({ source, distance_m }) => presentSource(source, distance_m));
 
   return json({ spot: presentSpot(spot), sources, radius_m: radius });
 }

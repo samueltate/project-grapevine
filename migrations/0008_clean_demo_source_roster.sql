@@ -5,12 +5,6 @@ WHERE source_kind = 'human';
 UPDATE sources
 SET
   online = 1,
-  checked_in_at = CASE id
-    WHEN 'src-boone-field' THEN '2030-09-28T13:36:00.000Z'
-    ELSE '2030-09-28T13:37:00.000Z'
-  END,
-  last_active = CASE id
-    WHEN 'src-boone-field' THEN '2030-09-28T13:36:00.000Z'
-    ELSE '2030-09-28T13:37:00.000Z'
-  END
+  checked_in_at = CURRENT_TIMESTAMP,
+  last_active = CURRENT_TIMESTAMP
 WHERE id IN ('src-boone-field', 'src-mountain-convoy');

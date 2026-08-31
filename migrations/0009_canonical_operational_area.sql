@@ -12,7 +12,7 @@ SET
   lat = 36.2168,
   lng = -81.6746,
   is_seeded = 1,
-  updated_at = '2030-09-28T13:35:00.000Z'
+  updated_at = CURRENT_TIMESTAMP
 WHERE place_id = 'demo-watauga-relief-corridor';
 
 UPDATE sources

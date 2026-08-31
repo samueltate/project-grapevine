@@ -16,7 +16,7 @@ UPDATE sources SET
   verification_label = 'Responder check-in confirmed', channel_label = 'Radio CH 3',
   availability_label = 'Available', lat = 36.2181, lng = -81.6764,
   offered = '["route_status","supply_access","hazard_report"]', online = 1,
-  checked_in_at = '2030-09-28T13:41:00.000Z', last_active = '2030-09-28T13:41:00.000Z'
+  checked_in_at = CURRENT_TIMESTAMP, last_active = CURRENT_TIMESTAMP
 WHERE id = 'src-boone-field';
 
 UPDATE sources SET
@@ -40,7 +40,7 @@ INSERT INTO sources (
   'src-recon-drone', 'watauga-recon-1', 0.94, 'demo-watauga-relief-corridor',
   'Watauga Relief Corridor', 'system', 'Authenticated aerial telemetry',
   36.2208, -81.6723, '["route_status","supply_access","hazard_report"]', 1,
-  '2030-09-28T13:42:00.000Z', '2030-09-28T13:42:00.000Z',
+  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
   'Watauga Recon 1', 'drone', 'Mesh link · strong', 'Available', 68,
   'Holding over relief corridor', '/drone-tree-obstruction.png',
   '{"connection":"Strong","flight_time_remaining_min":24,"wind_mph":7,"gps_accuracy_m":2,"classification":"Fallen tree blocks both lanes"}'
@@ -104,7 +104,7 @@ INSERT OR REPLACE INTO response_partners VALUES (
   'Volunteer chainsaw crew trained for storm debris clearance and access restoration.',
   '["debris_clearance","transport"]', '["Watauga Relief Corridor","Watauga County","Mountain Shelter B"]',
   'active', 'confirmed', 'Crew check-in confirms one saw team and utility vehicle available.',
-  'Radio OPS 7', 1, 'Watauga Relief Corridor', '2030-09-28T13:43:00.000Z'
+  'Radio OPS 7', 1, 'Watauga Relief Corridor', CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS response_inventory (
@@ -117,16 +117,16 @@ CREATE TABLE IF NOT EXISTS response_inventory (
 INSERT OR REPLACE INTO response_inventory VALUES
   ('inv-yellow-jacket', 'Yellow-jacket repellent', 'cases', 18, 60, 'shortage', 'Boone Staging Hub',
    'Field teams report increased yellow-jacket activity near cleanup and shelter sites.',
-   'https://donate.example/watauga-relief/repellent', '2030-09-28T13:44:00.000Z'),
+   'https://donate.example/watauga-relief/repellent', CURRENT_TIMESTAMP),
   ('inv-water', 'Bottled water', 'pallets', 8, 24, 'shortage', 'Boone Staging Hub',
    'Shelter consumption is outpacing the next scheduled delivery.',
-   'https://donate.example/watauga-relief/water', '2030-09-28T13:44:00.000Z'),
+   'https://donate.example/watauga-relief/water', CURRENT_TIMESTAMP),
   ('inv-meals', 'Shelf-stable meals', 'cases', 320, 280, 'adequate', 'Boone Staging Hub',
    'Current inventory covers the next operational period.',
-   'https://donate.example/watauga-relief/meals', '2030-09-28T13:44:00.000Z'),
+   'https://donate.example/watauga-relief/meals', CURRENT_TIMESTAMP),
   ('inv-blankets', 'Blankets', 'units', 460, 120, 'surplus', 'Boone Staging Hub',
    'Donations exceed the current shelter request.',
-   'https://donate.example/watauga-relief/blankets', '2030-09-28T13:44:00.000Z');
+   'https://donate.example/watauga-relief/blankets', CURRENT_TIMESTAMP);
 
 CREATE TABLE IF NOT EXISTS response_public_drafts (
   id TEXT PRIMARY KEY, item_id TEXT NOT NULL, channel TEXT NOT NULL,

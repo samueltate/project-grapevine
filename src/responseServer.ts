@@ -56,13 +56,22 @@ const incident = {
   operational_need: "Clear a fallen tree blocking access to Mountain Shelter B, then coordinate priority supplies.",
   published_status: "Miles and aerial telemetry confirm a fallen tree blocking both lanes near Mountain Shelter B.",
   uncertainty: "The obstruction and exact work site must be confirmed before a debris-clearance crew is dispatched.",
-  updated_at: "2030-09-28T13:30:00.000Z"
+  updated_at: new Date().toISOString()
 };
 
 const headers = { "content-type": "application/json; charset=utf-8" };
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers });
 const now = () => new Date().toISOString();
 const id = (prefix: string) => `${prefix}_${crypto.randomUUID()}`;
+
+function isoTimestamp(value: string): string;
+function isoTimestamp(value: null): null;
+function isoTimestamp(value: string | null): string | null {
+  if (!value) return value;
+  return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(value)
+    ? `${value.replace(" ", "T")}Z`
+    : value;
+}
 
 async function readJson(request: Request) {
   try { return await request.json() as Record<string, unknown>; } catch { return {}; }
@@ -80,7 +89,8 @@ function presentPartner(partner: DbPartner) {
     ...partner,
     capabilities: stringList(partner.capabilities) as ResponseNeed[],
     areas: stringList(partner.areas),
-    local_led: Boolean(partner.local_led)
+    local_led: Boolean(partner.local_led),
+    updated_at: isoTimestamp(partner.updated_at)
   };
 }
 
@@ -89,12 +99,18 @@ function presentShortlist(shortlist: DbShortlist, partners: DbPartner[] = []) {
   return {
     ...shortlist,
     partner_ids: partnerIds,
-    partners: partners.filter((partner) => partnerIds.includes(partner.id)).map(presentPartner)
+    partners: partners.filter((partner) => partnerIds.includes(partner.id)).map(presentPartner),
+    created_at: isoTimestamp(shortlist.created_at)
   };
 }
 
 function presentRequest(request: DbCoordinationRequest) {
-  return { ...request, field_verification_required: Boolean(request.field_verification_required) };
+  return {
+    ...request,
+    field_verification_required: Boolean(request.field_verification_required),
+    created_at: isoTimestamp(request.created_at),
+    approved_at: isoTimestamp(request.approved_at)
+  };
 }
 
 async function latestRouteVerification(env: Env) {
@@ -133,10 +149,10 @@ async function getBundle(env: Env) {
       answer_value: fieldVerification.answer_value,
       answer_note: fieldVerification.answer_note,
       source_name: fieldVerification.source_name.replaceAll("-", " "),
-      answered_at: fieldVerification.answered_at
+      answered_at: isoTimestamp(fieldVerification.answered_at)
     } : null,
-    inventory: inventory.results,
-    public_drafts: drafts.results
+    inventory: inventory.results.map((item) => ({ ...item, updated_at: isoTimestamp(item.updated_at) })),
+    public_drafts: drafts.results.map((item) => ({ ...item, created_at: isoTimestamp(item.created_at) }))
   };
 }
 
