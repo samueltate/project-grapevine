@@ -74,7 +74,7 @@ model. See OpenAI's [site tools documentation](https://help.openai.com/en/articl
 Open <https://project-grapevine.preflyhq.com/> and send:
 
 > Use only the WebMCP tools provided by this page. Read the published baseline
-> for the Watauga Relief Corridor, find available sources within 5 km, and use
+> for the Watauga Relief Corridor, find available sources within 3 miles, and use
 > Miles to prepare a route-status question asking whether a fallen tree blocks
 > access to Mountain Shelter B. Stop when human approval is required.
 

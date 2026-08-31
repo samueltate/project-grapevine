@@ -435,36 +435,33 @@ function Board() {
 
           <aside className="intelligence-panel">
             <div className="panel-title">
-              <div><p className="eyebrow">Decision support</p><h2>Corridor intelligence</h2></div>
+              <div><p className="eyebrow">What we know</p><h2>Route status</h2></div>
             </div>
             <section className="intel-section">
-              <span className="intel-kicker"><ClockIcon /> Published baseline</span>
+              <span className="intel-kicker"><ClockIcon /> Earlier report</span>
               {grapevine.baseline ? <>
                 <strong>{baselineStatusText(grapevine.baseline)}</strong>
                 <p>{baselineDetailText(grapevine.baseline)}</p>
-                <div className="confidence-row">
-                  <span style={{ width: `${Math.round(grapevine.baseline.confidence * 100)}%` }} />
-                </div>
-                <small>{Math.round(grapevine.baseline.confidence * 100)}% confidence · {minutesAgo(grapevine.baseline.as_of ?? "")}</small>
+                <small>Last updated {minutesAgo(grapevine.baseline.as_of ?? "")}</small>
               </> : <p className="muted">No baseline loaded.</p>}
             </section>
             <section className="intel-section live-report">
-              <span className="intel-kicker"><RadioIcon weight="fill" /> Live ground truth</span>
+              <span className="intel-kicker"><RadioIcon weight="fill" /> Latest report</span>
               {grapevine.activeSession?.answer_value ? <>
                 <strong className="answer-value">{grapevine.activeSession.answer_value}</strong>
                 <p>{assessment}</p>
                 <small>{grapevine.activeSession.source ? verificationLabel(grapevine.activeSession.source) : "Verified source report"}</small>
               </> : <>
-                <strong>Awaiting field verification</strong>
-                <p>Request a current report before committing relief vehicles.</p>
+                <strong>Waiting for someone nearby</strong>
+                <p>Ask a person or sensor nearby before sending relief vehicles.</p>
               </>}
             </section>
             <section className="intel-section active-request">
-              <span className="intel-kicker"><NavigationArrowIcon /> Active request</span>
+              <span className="intel-kicker"><NavigationArrowIcon /> Question in progress</span>
               {grapevine.activeSession ? <>
                 <strong>{requestLabel(grapevine.activeSession.request_type)}</strong>
                 <p>{grapevine.activeSession.status.replaceAll("_", " ")} · {grapevine.activeSession.source ? sourceDisplayName(grapevine.activeSession.source) : "selected source"}</p>
-              </> : <p>No request in progress.</p>}
+              </> : <p>No question has been sent yet.</p>}
             </section>
           </aside>
         </section>
@@ -485,7 +482,7 @@ function Board() {
         <section className="roster-panel">
           <div className="panel-title roster-title">
             <div><p className="eyebrow">Available network</p><h2>People and sensors nearby</h2></div>
-            <span>{grapevine.state.sources.length} sources within 5 km</span>
+            <span>{grapevine.state.sources.length} sources within 3 mi</span>
           </div>
           <SourceRoster
             sources={grapevine.state.sources}
