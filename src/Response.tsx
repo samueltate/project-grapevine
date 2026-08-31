@@ -26,12 +26,12 @@ function Sidebar({ toolCount }: { toolCount: number }) {
     </div>
     <p className="nav-group-label">Demo 1 · Live ground truth</p>
     <nav className="primary-nav" aria-label="Live ground truth navigation">
-      <a href="/"><HouseIcon /><span>Operations</span></a>
+      <a href="/"><HouseIcon /><span>Operations Team</span></a>
       <a href="/drive"><ListChecksIcon /><span>Field inbox</span></a>
     </nav>
     <p className="nav-group-label">Demo 2 · Resource coordination</p>
     <nav className="primary-nav" aria-label="Resource coordination navigation">
-      <a className="active" href="/response"><BuildingsIcon weight="fill" /><span>Partner directory</span></a>
+      <a className="active" href="/response"><BuildingsIcon weight="fill" /><span>Partner Directory</span></a>
     </nav>
     <div className="sidebar-status">
       <p><ShieldCheckIcon weight="fill" /> {toolCount} resource tools ready</p>

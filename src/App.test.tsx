@@ -19,7 +19,6 @@ const spot = {
   address: "Boone Staging Hub to Mountain Shelter B, Watauga County, NC",
   baseline_status: "Regional route feed: passable",
   baseline_detail: "Network update delayed; field verification required",
-  confidence: 0.62,
   lat: 36.2168,
   lng: -81.6746,
   is_seeded: true,
@@ -243,8 +242,8 @@ describe("Grapevine field inbox", () => {
 
     expect(await screen.findByRole("heading", { name: "Field Inbox" })).toBeInTheDocument();
     expect(screen.getByText("Human responder")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Operations" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: "Partner directory" })).toHaveAttribute("href", "/response");
+    expect(screen.getByRole("link", { name: "Operations Team" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Partner Directory" })).toHaveAttribute("href", "/response");
     expect(screen.queryByText(/sensor registration/i)).not.toBeInTheDocument();
   });
 });

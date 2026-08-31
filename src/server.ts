@@ -117,7 +117,6 @@ function presentSpot(spot: DbSpot) {
     address: spot.address,
     baseline_status: spot.hours,
     baseline_detail: spot.popular_times_now,
-    confidence: spot.rating,
     lat: spot.lat,
     lng: spot.lng,
     is_seeded: Boolean(spot.is_seeded),
@@ -126,10 +125,17 @@ function presentSpot(spot: DbSpot) {
 }
 
 function presentSource(source: DbSource, distance_m = 0) {
+  const telemetry = (() => {
+    try {
+      const { confidence: _confidence, ...operationalTelemetry } = JSON.parse(source.telemetry || "{}") as Record<string, unknown>;
+      return operationalTelemetry;
+    } catch {
+      return {};
+    }
+  })();
   return {
     id: source.id,
     handle: source.handle,
-    trust_score: source.trust_score,
     place_id: source.place_id,
     location_name: source.location_name,
     source_kind: source.source_kind,
@@ -148,7 +154,7 @@ function presentSource(source: DbSource, distance_m = 0) {
     battery_percent: source.battery_percent,
     mission_status: source.mission_status,
     image_url: source.image_url,
-    telemetry: (() => { try { return JSON.parse(source.telemetry || "{}"); } catch { return {}; } })()
+    telemetry
   };
 }
 
@@ -471,7 +477,7 @@ function machineResponse(requestType: RequestType, sourceHandle: string) {
       route_status: { value: "blocked", note: "Aerial observation: a fallen tree blocks both lanes east of Miles's check-in." },
       flood_depth: { value: "unclear", note: "The recon drone does not provide calibrated flood-depth telemetry." },
       supply_access: { value: "inaccessible", note: "The direct vehicle route is obstructed by a fallen tree." },
-      hazard_report: { value: "debris", note: "Image classification detects a large fallen tree across both lanes with 94% confidence." },
+      hazard_report: { value: "debris", note: "Image classification detects a large fallen tree across both lanes." },
       custom: { value: "yes", note: "Latest aerial image and telemetry are available in the drone status panel." }
     };
     return droneResponses[requestType];
@@ -638,7 +644,6 @@ async function handleDroneStatus(env: Env, sourceId: string) {
   const telemetry = (() => { try { return JSON.parse(source.telemetry || "{}"); } catch { return {}; } })();
   return json({ source: presentSource(source), observation: {
     classification: telemetry.classification ?? "No current classification",
-    confidence: telemetry.confidence ?? 0,
     image_url: source.image_url
   }});
 }

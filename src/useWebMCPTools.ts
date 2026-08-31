@@ -113,7 +113,7 @@ export function useWebMCPTools(actions: GrapevineActions): WebMCPToolsState {
         annotations: { ...annotations, readOnlyHint: true },
         async execute(args: unknown) {
           parseArgs(emptyArgsSchema, args);
-          return { page: "Operations", actions: operationsActionCatalog };
+          return { page: "Operations Team", actions: operationsActionCatalog };
         }
       } satisfies WebMCPTool,
       findAvailableSources: {

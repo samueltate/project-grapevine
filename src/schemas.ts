@@ -143,7 +143,6 @@ export type Spot = {
   address: string;
   baseline_status: string;
   baseline_detail: string;
-  confidence: number;
   lat: number;
   lng: number;
   is_seeded: boolean;
@@ -153,7 +152,6 @@ export type Spot = {
 export type Source = {
   id: string;
   handle: string;
-  trust_score: number;
   place_id: string;
   location_name: string;
   source_kind: "human" | "system";
@@ -184,7 +182,7 @@ export type DroneMission = {
 
 export type DroneStatus = {
   source: Source;
-  observation: { classification: string; confidence: number; image_url: string | null };
+  observation: { classification: string; image_url: string | null };
 };
 
 export type SessionStatus =

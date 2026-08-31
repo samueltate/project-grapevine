@@ -293,12 +293,12 @@ function LogisticsSidebar({
     </div>
     <p className="nav-group-label">Demo 1 · Live ground truth</p>
     <nav className="primary-nav" aria-label="Live ground truth navigation">
-      <a className={active === "operations" ? "active" : ""} href="/"><HouseIcon weight={active === "operations" ? "fill" : "regular"} /><span>Operations</span></a>
+      <a className={active === "operations" ? "active" : ""} href="/"><HouseIcon weight={active === "operations" ? "fill" : "regular"} /><span>Operations Team</span></a>
       <a className={active === "drive" ? "active" : ""} href="/drive"><ListChecksIcon weight={active === "drive" ? "fill" : "regular"} /><span>Field inbox</span></a>
     </nav>
     <p className="nav-group-label">Demo 2 · Resource coordination</p>
     <nav className="primary-nav" aria-label="Resource coordination navigation">
-      <a href="/response"><WaveformIcon /><span>Partner directory</span></a>
+      <a href="/response"><WaveformIcon /><span>Partner Directory</span></a>
     </nav>
     <div className="sidebar-status">
       <p><RadioButtonIcon weight="fill" /> {tools ? statusView(tools) : "Human field channel"}</p>
@@ -470,7 +470,7 @@ function Board() {
           <div>
             <p className="eyebrow">Aerial observation</p>
             <h2>{grapevine.droneStatus.observation.classification}</h2>
-            <div className="drone-metrics"><span><strong>{selectedSource.battery_percent}%</strong> battery</span><span><strong>{selectedSource.telemetry.connection}</strong> link</span><span><strong>{Math.round(grapevine.droneStatus.observation.confidence * 100)}%</strong> confidence</span></div>
+            <div className="drone-metrics"><span><strong>{selectedSource.battery_percent}%</strong> battery</span><span><strong>{selectedSource.telemetry.connection}</strong> link</span></div>
             <p>{selectedSource.mission_status}.</p>
             {!grapevine.droneMission && <button type="button" onClick={() => void grapevine.actions.prepareDroneMission({ source_id: selectedSource.id, target_name: "Mountain Shelter B access road", objective: "Confirm Miles's fallen-tree report and capture current route evidence." })}>Prepare reposition</button>}
             {grapevine.droneMission?.status === "pending_approval" && <div className="mission-approval"><span>Mission staged. Human approval required.</span><button type="button" onClick={() => void grapevine.actions.approveDroneMission(grapevine.droneMission!.id)}>Approve mission</button></div>}
@@ -699,7 +699,7 @@ export default function App() {
     <main className="not-found-page">
       <p className="eyebrow">Project Grapevine</p>
       <h1>Page not found</h1>
-      <a href="/">Return to operations</a>
+      <a href="/">Return to Operations Team</a>
     </main>
   );
 }

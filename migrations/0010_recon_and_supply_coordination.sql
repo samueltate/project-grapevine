@@ -43,7 +43,7 @@ INSERT INTO sources (
   '2030-09-28T13:42:00.000Z', '2030-09-28T13:42:00.000Z',
   'Watauga Recon 1', 'drone', 'Mesh link · strong', 'Available', 68,
   'Holding over relief corridor', '/drone-tree-obstruction.png',
-  '{"connection":"Strong","flight_time_remaining_min":24,"wind_mph":7,"gps_accuracy_m":2,"classification":"Fallen tree blocks both lanes","confidence":0.94}'
+  '{"connection":"Strong","flight_time_remaining_min":24,"wind_mph":7,"gps_accuracy_m":2,"classification":"Fallen tree blocks both lanes"}'
 ) ON CONFLICT(id) DO UPDATE SET
   handle = excluded.handle, display_name = excluded.display_name,
   source_profile = excluded.source_profile, verification_label = excluded.verification_label,
