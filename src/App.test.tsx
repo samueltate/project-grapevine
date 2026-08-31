@@ -250,19 +250,20 @@ describe("Grapevine field inbox", () => {
 });
 
 describe("Grapevine WebMCP tools", () => {
-  it("registers the six required tools", async () => {
+  it("registers the seven required tools", async () => {
     installFetch();
     const tools = installModelContext();
     render(<App />);
 
-    await waitFor(() => expect(tools.size).toBe(6));
+    await waitFor(() => expect(tools.size).toBe(7));
     expect([...tools.keys()].sort()).toEqual([
-      "ask_source",
       "find_available_sources",
       "get_drone_status",
       "get_response",
       "get_web_baseline",
-      "prepare_drone_mission"
+      "prepare_drone_mission",
+      "prepare_source_request",
+      "send_source_request"
     ]);
   });
 
@@ -270,7 +271,7 @@ describe("Grapevine WebMCP tools", () => {
     installFetch();
     const tools = installModelContext();
     render(<App />);
-    await waitFor(() => expect(tools.size).toBe(6));
+    await waitFor(() => expect(tools.size).toBe(7));
 
     const found = (await tools.get("find_available_sources")!.execute({
       near: "Watauga Relief Corridor"
@@ -279,13 +280,20 @@ describe("Grapevine WebMCP tools", () => {
 
     let created!: { id: string; status: string };
     await act(async () => {
-      created = (await tools.get("ask_source")!.execute({
+      const prepared = (await tools.get("prepare_source_request")!.execute({
         source_id: "src-boone-field",
         request_type: "route_status",
         question: "Can the aid convoy pass?"
-      })) as { id: string; status: string };
+      })) as { request: { id: string; status: string }; approval_required: boolean; sent: boolean };
+      expect(prepared.approval_required).toBe(true);
+      expect(prepared.sent).toBe(false);
+      created = prepared.request;
     });
     expect(created.status).toBe("pending_approval");
+
+    const sent = await tools.get("send_source_request")!.execute({ session_id: created.id }) as { request: { status: string }; sent: boolean };
+    expect(sent.sent).toBe(true);
+    expect(sent.request.status).toBe("sent");
   });
 });
 

@@ -54,7 +54,7 @@ initial public commit is dated August 31, 2026.
 
 Use the ChatGPT desktop app's built-in browser. Site tools are tied to the page
 that provides them, so keep the relevant Grapevine page open while running each
-scenario. The operations page exposes six tools and the partner directory exposes seven. The
+scenario. The operations page and partner directory each expose seven tools. The
 field inbox intentionally exposes no WebMCP tools because it is the human
 response surface.
 
@@ -64,7 +64,7 @@ Requirements:
 2. Visit <https://project-grapevine.preflyhq.com/>.
 3. Approve access to the site if prompted.
 4. Check the site-tools control in the address bar. The operations page should
-   show six available tools.
+   show seven available tools.
 
 Site-tool availability depends on the tester's ChatGPT account and selected
 model. See OpenAI's [site tools documentation](https://help.openai.com/en/articles/20001423-using-site-tools-in-the-chatgpt-desktop-app).
@@ -76,14 +76,15 @@ Open <https://project-grapevine.preflyhq.com/> and send:
 > Use only the WebMCP tools provided by this page. Read the published baseline
 > for the Watauga Relief Corridor, find available sources within 3 miles, and use
 > Miles to prepare a route-status question asking whether a fallen tree blocks
-> access to Mountain Shelter B. Stop when human approval is required.
+> access to Mountain Shelter B. Show me the exact question and ask whether I
+> want you to send it. Do not send it until I explicitly say yes.
 
 Expected flow:
 
 1. ChatGPT calls `get_web_baseline` and `find_available_sources`.
-2. ChatGPT calls `ask_source` for Miles.
-3. The request drawer opens. Select **Send question**.
-4. Send this follow-up:
+2. ChatGPT calls `prepare_source_request` for Miles and asks whether it should send the exact question.
+3. Reply **Yes**. ChatGPT calls `send_source_request`; the dashboard also retains a manual **Send question** fallback.
+4. After Miles answers, send this follow-up:
 
 > Retrieve the structured response. Then inspect Watauga Recon 1 and prepare a
 > simulated repositioning mission to confirm the obstruction. Stop for approval.
@@ -104,9 +105,10 @@ This optional version uses a phone or second browser window.
 
 > Use this page's WebMCP tools to find Miles and prepare a
 > route-status question asking whether relief vehicles can safely reach
-> Mountain Shelter B. Stop for approval.
+> Mountain Shelter B. Show me the exact question and ask whether I want you to
+> send it. Do not send it until I explicitly say yes.
 
-4. Select **Send question** in the request drawer.
+4. When ChatGPT asks whether to send the request, reply **Yes**. You can also select **Send question** in the request drawer.
 5. On the field device, choose a structured answer, add a short simulated
    observation, and submit it.
 6. In ChatGPT, send:
@@ -176,11 +178,12 @@ no Facebook account is connected and no external post is created.
 
 ## Route-Specific WebMCP Tools
 
-The Aid Logistics board at `/` registers six tools:
+The Aid Logistics board at `/` registers seven tools:
 
 - `find_available_sources`
 - `get_web_baseline`
-- `ask_source`
+- `prepare_source_request`
+- `send_source_request`
 - `get_response`
 - `get_drone_status`
 - `prepare_drone_mission`

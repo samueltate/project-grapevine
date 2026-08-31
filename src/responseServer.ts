@@ -202,7 +202,7 @@ async function prepareCoordination(request: Request, env: Env) {
       page: "/",
       tool: "find_available_sources",
       near: incident.area,
-      follow_with: "ask_source using request_type route_status"
+      follow_with: "prepare_source_request using request_type route_status, then send_source_request after explicit user approval"
     }
   });
 }

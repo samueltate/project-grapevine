@@ -53,7 +53,7 @@ export const getWebBaselineArgsSchema = z.object({
   spot: spotSchema.check(z.describe("The operational area whose baseline should be read."))
 });
 
-export const askSourceArgsSchema = z.object({
+export const prepareSourceRequestArgsSchema = z.object({
   source_id: sourceIdSchema.check(
     z.describe("The source ID returned by find_available_sources.")
   ),
@@ -75,7 +75,13 @@ export const askSourceArgsSchema = z.object({
 
 export const getResponseArgsSchema = z.object({
   session_id: sessionIdSchema.check(
-    z.describe("The session ID returned by ask_source.")
+    z.describe("The session ID returned by prepare_source_request.")
+  )
+});
+
+export const sendSourceRequestArgsSchema = z.object({
+  session_id: sessionIdSchema.check(
+    z.describe("The pending session ID returned by prepare_source_request. Call only after the user explicitly approves sending it.")
   )
 });
 
@@ -100,7 +106,11 @@ export const toolInputSchemas = {
     target: "draft-07",
     io: "input"
   }),
-  askSource: z.toJSONSchema(askSourceArgsSchema, {
+  prepareSourceRequest: z.toJSONSchema(prepareSourceRequestArgsSchema, {
+    target: "draft-07",
+    io: "input"
+  }),
+  sendSourceRequest: z.toJSONSchema(sendSourceRequestArgsSchema, {
     target: "draft-07",
     io: "input"
   }),

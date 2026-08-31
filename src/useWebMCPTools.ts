@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  askSourceArgsSchema,
+  prepareSourceRequestArgsSchema,
   findAvailableSourcesArgsSchema,
   getResponseArgsSchema,
   getDroneStatusArgsSchema,
   getWebBaselineArgsSchema,
   parseArgs,
   prepareDroneMissionArgsSchema,
+  sendSourceRequestArgsSchema,
   toolInputSchemas
 } from "./schemas";
 import type { GrapevineActions } from "./useGrapevine";
@@ -118,18 +119,45 @@ export function useWebMCPTools(actions: GrapevineActions): WebMCPToolsState {
           return actions.getWebBaseline(spot);
         }
       } satisfies WebMCPTool,
-      askSource: {
-        name: "ask_source",
+      prepareSourceRequest: {
+        name: "prepare_source_request",
         description:
-          "Prepare a structured request for a human or machine source. The request requires user authorization before dispatch.",
-        inputSchema: toolInputSchemas.askSource,
+          "Prepare and preview a structured question for a human or machine source without sending it. After this tool returns, show the exact question and ask the user whether they want it sent.",
+        inputSchema: toolInputSchemas.prepareSourceRequest,
         annotations,
         async execute(args: unknown) {
           const { source_id, request_type, question = "" } = parseArgs(
-            askSourceArgsSchema,
+            prepareSourceRequestArgsSchema,
             args
           );
-          return actions.askSource(source_id, request_type, question);
+          const request = await actions.askSource(source_id, request_type, question);
+          return {
+            request,
+            approval_required: true,
+            sent: false,
+            next_step: {
+              tool: "send_source_request",
+              instruction: `Ask the user: \"Would you like me to send this request to ${request.source?.display_name ?? "the selected source"}?\" Call send_source_request only after the user explicitly says yes.`
+            }
+          };
+        }
+      } satisfies WebMCPTool,
+      sendSourceRequest: {
+        name: "send_source_request",
+        description:
+          "Send an already prepared source request. Call this only after the user explicitly confirms that the exact prepared question should be sent.",
+        inputSchema: toolInputSchemas.sendSourceRequest,
+        annotations,
+        async execute(args: unknown) {
+          const { session_id } = parseArgs(sendSourceRequestArgsSchema, args);
+          const request = await actions.approveSession(session_id);
+          return {
+            request,
+            sent: true,
+            message: request.status === "answered"
+              ? "The request was sent and the simulated machine source answered."
+              : "The request was sent to the selected human source."
+          };
         }
       } satisfies WebMCPTool,
       getResponse: {
@@ -171,7 +199,8 @@ export function useWebMCPTools(actions: GrapevineActions): WebMCPToolsState {
   const registrations = [
     useWebMCPTool(tools.findAvailableSources),
     useWebMCPTool(tools.getWebBaseline),
-    useWebMCPTool(tools.askSource),
+    useWebMCPTool(tools.prepareSourceRequest),
+    useWebMCPTool(tools.sendSourceRequest),
     useWebMCPTool(tools.getResponse),
     useWebMCPTool(tools.getDroneStatus),
     useWebMCPTool(tools.prepareDroneMission)
