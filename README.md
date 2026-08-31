@@ -41,7 +41,8 @@ not autonomous dispatch:
 | Workspace | Agent contribution | Human responsibility |
 | --- | --- | --- |
 | Live Ground Truth | Finds people, sensors, and a drone; compares evidence; and stages questions or drone missions | Authorizes requests and missions, then supplies field observations |
-| Resource Coordination | Matches a verified obstruction to a debris crew, reads supply inventory, and drafts a shortage appeal | Reviews uncertainty, approves the plan, and decides whether a draft is ever published |
+| Resource Coordination | Matches a verified obstruction to an appropriate debris crew and prepares a response plan | Reviews uncertainty and approves the plan |
+| Warehouse | Reads supply inventory and drafts a shortage appeal | Reviews inventory priorities and decides whether a draft is published |
 
 This project was created during The WebMCP Challenge submission period. Its
 initial public commit is dated August 31, 2026.
@@ -50,9 +51,9 @@ initial public commit is dated August 31, 2026.
 
 Use the ChatGPT desktop app's built-in browser. Site tools are tied to the page
 that provides them, so keep the relevant Grapevine page open while running each
-scenario. The operations page and partner directory each expose eight tools. The
-field inbox intentionally exposes no WebMCP tools because it is the human
-response surface.
+scenario. Operations exposes eight tools, Partner Directory exposes six, and
+Warehouse exposes three. The field inbox intentionally exposes no WebMCP tools
+because it is the human response surface.
 
 Requirements:
 
@@ -145,11 +146,11 @@ retrieve the response and return to the partner directory. The plan should show
 the field evidence and unlock the final human-controlled **Approve plan**
 button.
 
-Then ask ChatGPT to read the supply inventory, explain why blanket volume is not
+For the warehouse portion, open <https://project-grapevine.preflyhq.com/warehouse>
+and ask ChatGPT to read the supply inventory, explain why blanket volume is not
 the priority, and draft a social appeal for yellow-jacket repellent without
-publishing anything. The result should be labeled **Draft · not published**.
-The visible Facebook button demonstrates a two-step publish approval for the
-communications team.
+publishing anything. The visible Facebook button demonstrates a two-step
+publish approval for the communications team.
 
 ### Troubleshooting Site Tools
 
@@ -191,7 +192,7 @@ gauge, roadside conditions camera, and recon drone return deterministic
 telemetry after authorization. A field responder cannot register a
 phone as an infrastructure sensor.
 
-The Resource Coordination workspace at `/response` registers eight separate tools:
+The Resource Coordination workspace at `/response` registers six separate tools:
 
 - `list_available_actions`
 - `get_crisis_brief`
@@ -199,15 +200,19 @@ The Resource Coordination workspace at `/response` registers eight separate tool
 - `get_partner_details`
 - `create_response_shortlist`
 - `prepare_coordination_request`
+
+The first three workflow tools read structured directory evidence. The final
+two save a transparent shortlist and stage a coordination request. No external
+partner is contacted. If route evidence is uncertain, the result directs the
+coordinator to Demo 1 for live field verification before dispatch.
+
+The Warehouse workspace at `/warehouse` registers three tools:
+
+- `list_available_actions`
 - `get_supply_inventory`
 - `draft_supply_appeal`
 
-The first three tools read structured directory evidence. The final two save a
-transparent shortlist and stage a coordination request. No external partner is
-contacted. If route evidence is uncertain, the result directs the coordinator
-to Demo 1 for live field verification before dispatch.
-
-Both tool sets are registered directly with
+All three tool sets are registered directly with
 `document.modelContext.registerTool`. Zod schemas provide bounded JSON inputs,
 tool annotations distinguish read-only operations from controlled actions, and
 each execution returns structured data rather than scraped presentation text.
@@ -225,7 +230,7 @@ inbox.
 - Approval-gated requests
 - Structured logistics responses
 - Drone telemetry and approval-gated missions
-- Inventory signals and draft-only public appeals
+- Warehouse workspace with inventory signals and draft-only public appeals
 
 The core reference does not require R2 or Durable Objects. D1 persists the
 request loop, and the clients use short polling for updates.

@@ -13,9 +13,7 @@ const responseActionCatalog = [
   { tool: "find_response_partners", description: "Find relief partners by area, capability, and local leadership." },
   { tool: "get_partner_details", description: "Inspect a partner's capabilities, evidence, contact channel, and route dependency." },
   { tool: "create_response_shortlist", description: "Save a transparent partner shortlist without contacting or endorsing an organization." },
-  { tool: "prepare_coordination_request", description: "Stage a crew coordination request for human approval." },
-  { tool: "get_supply_inventory", description: "Read inventory and identify shortages, adequate stock, and oversupply." },
-  { tool: "draft_supply_appeal", description: "Draft a reviewable social appeal for a verified shortage without publishing it." }
+  { tool: "prepare_coordination_request", description: "Stage a crew coordination request for human approval." }
 ] as const;
 
 export function useResponseWebMCPTools(actions: ResponseActions): ResponseWebMCPState {
@@ -79,26 +77,6 @@ export function useResponseWebMCPTools(actions: ResponseActions): ResponseWebMCP
       async execute(args) {
         const input = parseResponseArgs(responseArgSchemas.coordination, args);
         return actions.prepareCoordination(input);
-      }
-    },
-    {
-      name: "get_supply_inventory",
-      description: "Read relief inventory and distinguish verified shortages, adequate stock, and oversupply.",
-      inputSchema: responseToolSchemas.inventory,
-      annotations: readOnly,
-      async execute(args) {
-        const input = parseResponseArgs(responseArgSchemas.inventory, args);
-        return actions.getSupplyInventory(input.status);
-      }
-    },
-    {
-      name: "draft_supply_appeal",
-      description: "Create a reviewable social appeal for a verified shortage. This saves a draft and never publishes it.",
-      inputSchema: responseToolSchemas.appeal,
-      annotations: controlled,
-      async execute(args) {
-        const input = parseResponseArgs(responseArgSchemas.appeal, args);
-        return actions.draftSupplyAppeal(input.item_id);
       }
     }
   ], [actions]);

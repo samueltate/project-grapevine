@@ -162,6 +162,7 @@ a { color: inherit; }
 .mission-approval { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); padding-top: 10px; font-size: .68rem; font-weight: 700; }
 .mission-complete { display: flex; align-items: center; gap: 7px; color: var(--accent) !important; font-weight: 750; }
 .inventory-panel { max-width: 1460px; margin: 16px auto 0; border: 1px solid var(--line); border-radius: 7px; background: #fff; overflow: hidden; }
+.warehouse-page-panel { margin-top: 0; }
 .inventory-panel > .response-section-heading { border-bottom: 1px solid var(--line); padding: 15px 17px; }
 .inventory-grid { display: grid; grid-template-columns: repeat(4,1fr); }
 .inventory-item { display: grid; align-content: start; gap: 9px; min-width: 0; padding: 16px; }

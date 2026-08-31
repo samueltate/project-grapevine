@@ -244,6 +244,7 @@ describe("Grapevine field inbox", () => {
     expect(screen.getByText("Human responder")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Operations Team" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: "Partner Directory" })).toHaveAttribute("href", "/response");
+    expect(screen.getByRole("link", { name: "Warehouse" })).toHaveAttribute("href", "/warehouse");
     expect(screen.queryByText(/sensor registration/i)).not.toBeInTheDocument();
   });
 });
@@ -312,7 +313,7 @@ describe("Grapevine WebMCP tools", () => {
 });
 
 describe("Grapevine resource coordination", () => {
-  it("presents the partner workflow and registers only its eight WebMCP tools", async () => {
+  it("presents the partner workflow and registers only its six WebMCP tools", async () => {
     Object.defineProperty(window, "location", { configurable: true, value: new URL("https://example.test/response") });
     installResponseFetch();
     const tools = installModelContext();
@@ -320,17 +321,16 @@ describe("Grapevine resource coordination", () => {
 
     expect(await screen.findByRole("heading", { name: "Resource Coordination" })).toBeInTheDocument();
     expect(await screen.findByText("High Country Community Response")).toBeInTheDocument();
-    await waitFor(() => expect(tools.size).toBe(8));
+    await waitFor(() => expect(tools.size).toBe(6));
     expect([...tools.keys()].sort()).toEqual([
       "create_response_shortlist",
-      "draft_supply_appeal",
       "find_response_partners",
       "get_crisis_brief",
       "get_partner_details",
-      "get_supply_inventory",
       "list_available_actions",
       "prepare_coordination_request"
     ]);
+    expect(screen.queryByRole("heading", { name: "Supply gaps, not donation volume" })).not.toBeInTheDocument();
     expect(tools.has("find_available_sources")).toBe(false);
   });
 
@@ -339,7 +339,7 @@ describe("Grapevine resource coordination", () => {
     installResponseFetch();
     const tools = installModelContext();
     render(<App />);
-    await waitFor(() => expect(tools.size).toBe(8));
+    await waitFor(() => expect(tools.size).toBe(6));
 
     const result = await tools.get("prepare_coordination_request")!.execute({
       shortlist_id: "shortlist-1",
@@ -347,5 +347,28 @@ describe("Grapevine resource coordination", () => {
       available_resources: "Two truckloads of bottled water."
     }) as { recommended_next_step: { tool: string } };
     expect(result.recommended_next_step.tool).toBe("find_available_sources");
+  });
+});
+
+describe("Grapevine warehouse", () => {
+  it("presents inventory and registers only its three WebMCP tools", async () => {
+    Object.defineProperty(window, "location", { configurable: true, value: new URL("https://example.test/warehouse") });
+    installResponseFetch();
+    const tools = installModelContext();
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Warehouse" })).toBeInTheDocument();
+    expect(await screen.findByText("Yellow-jacket repellent")).toBeInTheDocument();
+    await waitFor(() => expect(tools.size).toBe(3));
+    expect([...tools.keys()].sort()).toEqual([
+      "draft_supply_appeal",
+      "get_supply_inventory",
+      "list_available_actions"
+    ]);
+    expect(tools.has("find_response_partners")).toBe(false);
+
+    const catalog = await tools.get("list_available_actions")!.execute({}) as { page: string; actions: unknown[] };
+    expect(catalog.page).toBe("Warehouse");
+    expect(catalog.actions).toHaveLength(3);
   });
 });

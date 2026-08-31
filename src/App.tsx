@@ -9,6 +9,7 @@ import {
   ListChecksIcon,
   MapPinIcon,
   NavigationArrowIcon,
+  PackageIcon,
   RadioIcon,
   RadioButtonIcon,
   UsersThreeIcon,
@@ -31,6 +32,7 @@ import {
 import { useGrapevine } from "./useGrapevine";
 import { useWebMCPTools, type WebMCPToolsState } from "./useWebMCPTools";
 import ResponseApp from "./Response";
+import WarehouseApp from "./Warehouse";
 
 const defaultQuestions: Record<RequestType, string> = {
   route_status: "Can aid vehicles safely reach Mountain Shelter B from Boone?",
@@ -299,6 +301,7 @@ function LogisticsSidebar({
     <p className="nav-group-label">Demo 2 · Resource coordination</p>
     <nav className="primary-nav" aria-label="Resource coordination navigation">
       <a href="/response"><WaveformIcon /><span>Partner Directory</span></a>
+      <a href="/warehouse"><PackageIcon /><span>Warehouse</span></a>
     </nav>
     <div className="sidebar-status">
       <p><RadioButtonIcon weight="fill" /> {tools ? statusView(tools) : "Human field channel"}</p>
@@ -691,6 +694,7 @@ function Driver() {
 
 export default function App() {
   const path = window.location.pathname;
+  if (path.startsWith("/warehouse")) return <WarehouseApp />;
   if (path.startsWith("/response")) return <ResponseApp />;
   if (path === "/drive") return <Driver />;
   if (path === "/") return <Board />;
