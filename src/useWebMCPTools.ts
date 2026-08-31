@@ -71,18 +71,17 @@ function useWebMCPTool(tool: WebMCPTool): ToolRegistration {
       error: null
     });
 
-    void modelContext
-      .registerTool(tool, { signal: controller.signal })
-      .then(() => {
-        if (!controller.signal.aborted) {
-          setState({
-            name: tool.name,
-            supported: true,
-            registered: true,
-            error: null
-          });
-        }
-      })
+    void (async () => {
+      await modelContext.registerTool(tool, { signal: controller.signal });
+      if (!controller.signal.aborted) {
+        setState({
+          name: tool.name,
+          supported: true,
+          registered: true,
+          error: null
+        });
+      }
+    })()
       .catch((caught: unknown) => {
         if (!controller.signal.aborted) {
           setState({

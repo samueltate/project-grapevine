@@ -112,10 +112,11 @@ export function useResponseWebMCPTools(actions: ResponseActions): ResponseWebMCP
     const controller = new AbortController();
     let count = 0;
     setState({ supported: true, registered: false, count: 0, error: null });
-    void Promise.all(tools.map((tool) => modelContext.registerTool(tool, { signal: controller.signal }).then(() => {
+    void Promise.all(tools.map(async (tool) => {
+      await modelContext.registerTool(tool, { signal: controller.signal });
       count += 1;
       if (!controller.signal.aborted) setState({ supported: true, registered: count === tools.length, count, error: null });
-    }))).catch((caught: unknown) => {
+    })).catch((caught: unknown) => {
       if (!controller.signal.aborted) setState({ supported: true, registered: false, count, error: caught instanceof Error ? caught : new Error("Response WebMCP registration failed.") });
     });
     return () => controller.abort();

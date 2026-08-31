@@ -111,10 +111,10 @@ const responseBundle = {
   public_drafts: []
 };
 
-function installModelContext() {
+function installModelContext(synchronous = false) {
   const tools = new Map<string, RegisteredTool>();
   const modelContext = {
-    async registerTool(
+    registerTool(
       tool: RegisteredTool,
       options: { signal?: AbortSignal } = {}
     ) {
@@ -122,6 +122,7 @@ function installModelContext() {
       options.signal?.addEventListener("abort", () => {
         if (tools.get(tool.name) === tool) tools.delete(tool.name);
       });
+      return synchronous ? undefined : Promise.resolve();
     }
   };
 
@@ -250,6 +251,16 @@ describe("Grapevine field inbox", () => {
 });
 
 describe("Grapevine WebMCP tools", () => {
+  it("registers every tool when the browser registration API returns synchronously", async () => {
+    installFetch();
+    const tools = installModelContext(true);
+    render(<App />);
+
+    await waitFor(() => expect(tools.size).toBe(8));
+    expect(tools.has("list_available_actions")).toBe(true);
+    expect(tools.has("prepare_source_request")).toBe(true);
+  });
+
   it("registers the eight required tools", async () => {
     installFetch();
     const tools = installModelContext();
