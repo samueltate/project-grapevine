@@ -150,6 +150,8 @@ button.
 Then ask ChatGPT to read the supply inventory, explain why blanket volume is not
 the priority, and draft a social appeal for yellow-jacket repellent without
 publishing anything. The result should be labeled **Draft · not published**.
+The visible Facebook button demonstrates a two-step simulated publish approval;
+no Facebook account is connected and no external post is created.
 
 ### Troubleshooting Site Tools
 

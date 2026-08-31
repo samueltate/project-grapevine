@@ -2,6 +2,7 @@ import {
   ArrowRightIcon,
   BuildingsIcon,
   CheckCircleIcon,
+  FacebookLogoIcon,
   HouseIcon,
   ListChecksIcon,
   MagnifyingGlassIcon,
@@ -68,6 +69,8 @@ export default function ResponseApp() {
   const [matches, setMatches] = useState<ResponsePartner[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [publishConfirm, setPublishConfirm] = useState(false);
+  const [simulatedPublished, setSimulatedPublished] = useState(false);
 
   const bundle = response.bundle;
   const currentShortlist = bundle?.shortlists[0] ?? null;
@@ -120,6 +123,12 @@ export default function ResponseApp() {
         available_resources: "One chainsaw crew, utility vehicle, and Miles's verified work-site location."
       });
     } finally { setBusy(false); }
+  }
+
+  async function draftAppeal(itemId: string) {
+    setPublishConfirm(false);
+    setSimulatedPublished(false);
+    await response.actions.draftSupplyAppeal(itemId);
   }
 
   if (!bundle) return <div className="dashboard-shell"><Sidebar toolCount={tools.count} /><main className="dashboard-main"><p>Loading response directory...</p></main></div>;
@@ -180,10 +189,28 @@ export default function ResponseApp() {
             <div><strong>{item.item_name}</strong><span>{item.status}</span></div>
             <p>{item.field_signal}</p>
             <small>{item.on_hand} {item.unit} on hand · {item.requested} requested</small>
-            {item.status === "shortage" && <button type="button" onClick={() => void response.actions.draftSupplyAppeal(item.id)}><MegaphoneIcon /> Draft appeal</button>}
+            {item.status === "shortage" && <button type="button" onClick={() => void draftAppeal(item.id)}><MegaphoneIcon /> Draft appeal</button>}
           </article>)}
         </div>
-        {bundle.public_drafts[0] && <div className="appeal-draft"><div><span>Draft · not published</span><strong>Public supply appeal</strong></div><p>{bundle.public_drafts[0].copy}</p></div>}
+        {bundle.public_drafts[0] && <article className="appeal-draft">
+          <header>
+            <div><span>{simulatedPublished ? "Simulation complete" : "Ready for review"}</span><h3>Public supply appeal</h3></div>
+            <strong className="appeal-channel"><FacebookLogoIcon weight="fill" /> Facebook</strong>
+          </header>
+          <p>{bundle.public_drafts[0].copy}</p>
+          <footer>
+            {!publishConfirm && !simulatedPublished && <>
+              <button type="button" onClick={() => setPublishConfirm(true)}><FacebookLogoIcon weight="fill" /> Publish to Facebook</button>
+              <small>Simulation only · no Facebook account is connected</small>
+            </>}
+            {publishConfirm && !simulatedPublished && <div className="publish-confirmation">
+              <span><strong>Publish this simulated post?</strong><small>No external post will be created.</small></span>
+              <button type="button" className="secondary-button" onClick={() => setPublishConfirm(false)}>Cancel</button>
+              <button type="button" onClick={() => { setPublishConfirm(false); setSimulatedPublished(true); }}>Confirm publish</button>
+            </div>}
+            {simulatedPublished && <div className="simulated-published"><CheckCircleIcon weight="fill" /><span><strong>Published to Facebook (simulation)</strong><small>No external post was created.</small></span></div>}
+          </footer>
+        </article>}
       </section>
     </main>
   </div>;
