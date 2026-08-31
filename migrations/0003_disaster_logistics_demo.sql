@@ -76,7 +76,7 @@ INSERT INTO sources (
   (
     'src-creek-gauge', 'demo-creek-gauge-7', 0.95,
     'demo-watauga-relief-corridor', 'Watauga Relief Corridor', 'system',
-    'Authenticated sensor feed (simulated)', 36.2140, -81.6700,
+    'Authenticated sensor feed', 36.2140, -81.6700,
     '["flood_depth","route_status","hazard_report"]',
     1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
   );

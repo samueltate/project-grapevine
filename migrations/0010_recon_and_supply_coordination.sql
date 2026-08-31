@@ -38,7 +38,7 @@ INSERT INTO sources (
   channel_label, availability_label, battery_percent, mission_status, image_url, telemetry
 ) VALUES (
   'src-recon-drone', 'watauga-recon-1', 0.94, 'demo-watauga-relief-corridor',
-  'Watauga Relief Corridor', 'system', 'Simulated authenticated aerial telemetry',
+  'Watauga Relief Corridor', 'system', 'Authenticated aerial telemetry',
   36.2208, -81.6723, '["route_status","supply_access","hazard_report"]', 1,
   '2030-09-28T13:42:00.000Z', '2030-09-28T13:42:00.000Z',
   'Watauga Recon 1', 'drone', 'Mesh link · strong', 'Available', 68,
@@ -103,8 +103,8 @@ INSERT OR REPLACE INTO response_partners VALUES (
   'partner-high-country-sawyers', 'High Country Sawyer Team', 'local',
   'Volunteer chainsaw crew trained for storm debris clearance and access restoration.',
   '["debris_clearance","transport"]', '["Watauga Relief Corridor","Watauga County","Mountain Shelter B"]',
-  'active', 'confirmed', 'Simulated crew check-in confirms one saw team and utility vehicle available.',
-  'Radio OPS 7 · fictional', 1, 'Watauga Relief Corridor', '2030-09-28T13:43:00.000Z'
+  'active', 'confirmed', 'Crew check-in confirms one saw team and utility vehicle available.',
+  'Radio OPS 7', 1, 'Watauga Relief Corridor', '2030-09-28T13:43:00.000Z'
 );
 
 CREATE TABLE IF NOT EXISTS response_inventory (

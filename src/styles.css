@@ -38,7 +38,6 @@ a { color: inherit; }
 .nav-group-label { margin: 18px 10px 7px; color: #75857e; font-size: .58rem; font-weight: 800; text-transform: uppercase; }
 .brand-block + .nav-group-label { margin-top: 0; }
 .sidebar-status { margin-top: auto; border-top: 1px solid #32403b; padding: 17px 8px 0; }
-.simulation-label { display: inline-flex; border: 1px solid #53615c; border-radius: 4px; color: #c7d0cc; font-size: .62rem; font-weight: 800; padding: 4px 6px; text-transform: uppercase; }
 .sidebar-status p { display: flex; align-items: flex-start; gap: 7px; margin: 10px 0 0; color: #aeb9b4; font-size: .7rem; line-height: 1.4; }
 .sidebar-status svg { flex: 0 0 auto; width: 14px; height: 14px; color: #70b89f; }
 
@@ -186,12 +185,12 @@ a { color: inherit; }
 .appeal-draft footer { display: flex; align-items: center; gap: 12px; }
 .appeal-draft footer > button, .publish-confirmation button { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--accent); border-radius: 6px; background: var(--accent); color: #fff; font-size: .66rem; font-weight: 750; padding: 8px 11px; }
 .appeal-draft footer > button svg { width: 17px; height: 17px; }
-.appeal-draft footer > small, .publish-confirmation small, .simulated-published small { color: var(--muted); font-size: .6rem; }
+.appeal-draft footer > small, .publish-confirmation small, .publish-approved small { color: var(--muted); font-size: .6rem; }
 .publish-confirmation { display: grid; grid-template-columns: minmax(220px,1fr) auto auto; width: 100%; align-items: center; gap: 9px; border-top: 1px solid #cbd9d3; padding-top: 13px; }
-.publish-confirmation > span, .simulated-published > span { display: grid; gap: 3px; }
-.publish-confirmation strong, .simulated-published strong { font-size: .68rem; }
-.simulated-published { display: flex; align-items: center; gap: 9px; color: var(--accent); }
-.simulated-published > svg { width: 23px; height: 23px; }
+.publish-confirmation > span, .publish-approved > span { display: grid; gap: 3px; }
+.publish-confirmation strong, .publish-approved strong { font-size: .68rem; }
+.publish-approved { display: flex; align-items: center; gap: 9px; color: var(--accent); }
+.publish-approved > svg { width: 23px; height: 23px; }
 
 /* Field responder view */
 .phone-shell { min-height: 100vh; background: #f4f6f5; padding: 22px 14px 38px; }

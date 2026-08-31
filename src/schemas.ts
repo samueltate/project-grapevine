@@ -183,7 +183,6 @@ export type DroneMission = {
 };
 
 export type DroneStatus = {
-  fictional: true;
   source: Source;
   observation: { classification: string; confidence: number; image_url: string | null };
 };

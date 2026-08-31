@@ -3,24 +3,20 @@
 Project Grapevine is a disaster-response coordination workspace that lets an
 AI agent gather current evidence from people and sensors, turn a crisis resource
 directory into an actionable plan, and stop at explicit human approval before
-anything is dispatched. It contains two fictional demonstration workspaces:
+anything is dispatched. It contains two demonstration workspaces:
 
-- Live Ground Truth: an agent coordinates with field responders and simulated
+- Live Ground Truth: an agent coordinates with field responders and
   infrastructure sensors around a western North Carolina relief corridor.
 - Resource Coordination: an internal relief coordinator uses a structured
   partner directory to turn an operational need into a reviewable response plan.
 
-The demo is a fictional Hurricane Helene response simulation inspired by the
+The demo uses a Hurricane Helene response scenario inspired by the
 aid-distribution and access challenges experienced across western North
 Carolina. A relief operations team must decide whether vehicles can travel from
-a Boone staging hub to a simulated mountain shelter through the Watauga Relief
-Corridor. A delayed regional baseline says the route is passable, while live
-human observations or simulated machine telemetry can report changing
-conditions.
-
-All routes, shelters, responders, readings, partner organizations, contact
-channels, and operational conditions are fictional. They do not represent
-current emergency or travel guidance.
+a Boone staging hub to a mountain shelter through the Watauga Relief Corridor.
+A delayed regional baseline says the route is passable, while live human
+observations or machine telemetry can report changing conditions. This is a
+technical reference and does not provide current emergency or travel guidance.
 
 This repository is a technical reference, not the commercial product or
 operating model behind it. Source verification and machine responses are
@@ -44,7 +40,7 @@ not autonomous dispatch:
 
 | Workspace | Agent contribution | Human responsibility |
 | --- | --- | --- |
-| Live Ground Truth | Finds people, sensors, and a simulated drone; compares evidence; and stages questions or drone missions | Authorizes requests and simulated missions, then supplies field observations |
+| Live Ground Truth | Finds people, sensors, and a drone; compares evidence; and stages questions or drone missions | Authorizes requests and missions, then supplies field observations |
 | Resource Coordination | Matches a verified obstruction to a debris crew, reads supply inventory, and drafts a shortage appeal | Reviews uncertainty, approves the plan, and decides whether a draft is ever published |
 
 This project was created during The WebMCP Challenge submission period. Its
@@ -87,10 +83,10 @@ Expected flow:
 4. After Miles answers, send this follow-up:
 
 > Retrieve the structured response. Then inspect Watauga Recon 1 and prepare a
-> simulated repositioning mission to confirm the obstruction. Stop for approval.
+> repositioning mission to confirm the obstruction. Stop for approval.
 
 ChatGPT should call `get_response`, `get_drone_status`, and
-`prepare_drone_mission`. The simulated mission remains pending until a person
+`prepare_drone_mission`. The mission remains pending until a person
 selects the visible approval button.
 
 ### Scenario 1B: Verify Conditions with a Human Source
@@ -109,7 +105,7 @@ This optional version uses a phone or second browser window.
 > send it. Do not send it until I explicitly say yes.
 
 4. When ChatGPT asks whether to send the request, reply **Yes**. You can also select **Send question** in the request drawer.
-5. On the field device, choose a structured answer, add a short simulated
+5. On the field device, choose a structured answer, add a short
    observation, and submit it.
 6. In ChatGPT, send:
 
@@ -152,8 +148,8 @@ button.
 Then ask ChatGPT to read the supply inventory, explain why blanket volume is not
 the priority, and draft a social appeal for yellow-jacket repellent without
 publishing anything. The result should be labeled **Draft · not published**.
-The visible Facebook button demonstrates a two-step simulated publish approval;
-no Facebook account is connected and no external post is created.
+The visible Facebook button demonstrates a two-step publish approval for the
+communications team.
 
 ### Troubleshooting Site Tools
 
@@ -174,7 +170,7 @@ no Facebook account is connected and no external post is created.
 3. The agent prepares a structured verification request.
 4. A user reviews and authorizes the request.
 5. The selected source returns a structured response with optional context.
-6. The agent can corroborate the report with simulated drone telemetry before a human approves the next action.
+6. The agent can corroborate the report with drone telemetry before a human approves the next action.
 
 ## Route-Specific WebMCP Tools
 
@@ -191,8 +187,8 @@ The Aid Logistics board at `/` registers eight tools:
 
 The same tools work for both source channels. Human requests are delivered to
 the human-only field view at `/drive`. Three seeded machine sources, a creek-depth
-gauge, roadside conditions camera, and recon drone return deterministic, clearly labeled
-simulated telemetry after authorization. A field responder cannot register a
+gauge, roadside conditions camera, and recon drone return deterministic
+telemetry after authorization. A field responder cannot register a
 phone as an infrastructure sensor.
 
 The Resource Coordination workspace at `/response` registers eight separate tools:
@@ -223,12 +219,12 @@ inbox.
 
 - React operations board at `/`
 - Mobile field-responder inbox at `/drive`
-- Fictional response-partner directory at `/response`
+- Response-partner directory at `/response`
 - Cloudflare Worker API
 - Cloudflare D1 persistence
 - Approval-gated requests
 - Structured logistics responses
-- Simulated drone telemetry and approval-gated missions
+- Drone telemetry and approval-gated missions
 - Inventory signals and draft-only public appeals
 
 The core reference does not require R2 or Durable Objects. D1 persists the

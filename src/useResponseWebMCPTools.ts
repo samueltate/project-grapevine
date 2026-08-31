@@ -9,12 +9,12 @@ const controlled = { readOnlyHint: false, untrustedContentHint: true };
 
 const responseActionCatalog = [
   { tool: "list_available_actions", description: "List every WebMCP action available on the Partner Directory page and explain what each one does." },
-  { tool: "get_crisis_brief", description: "Read the simulated Western North Carolina incident brief and its known uncertainty." },
-  { tool: "find_response_partners", description: "Find simulated relief partners by area, capability, and local leadership." },
+  { tool: "get_crisis_brief", description: "Read the Western North Carolina incident brief and its known uncertainty." },
+  { tool: "find_response_partners", description: "Find relief partners by area, capability, and local leadership." },
   { tool: "get_partner_details", description: "Inspect a partner's capabilities, evidence, contact channel, and route dependency." },
   { tool: "create_response_shortlist", description: "Save a transparent partner shortlist without contacting or endorsing an organization." },
-  { tool: "prepare_coordination_request", description: "Stage a simulated crew coordination request for human approval." },
-  { tool: "get_supply_inventory", description: "Read simulated inventory and identify shortages, adequate stock, and oversupply." },
+  { tool: "prepare_coordination_request", description: "Stage a crew coordination request for human approval." },
+  { tool: "get_supply_inventory", description: "Read inventory and identify shortages, adequate stock, and oversupply." },
   { tool: "draft_supply_appeal", description: "Draft a reviewable social appeal for a verified shortage without publishing it." }
 ] as const;
 
@@ -33,7 +33,7 @@ export function useResponseWebMCPTools(actions: ResponseActions): ResponseWebMCP
     },
     {
       name: "get_crisis_brief",
-      description: "Read the simulated Western North Carolina incident brief, including the published status and known uncertainty.",
+      description: "Read the Western North Carolina incident brief, including the published status and known uncertainty.",
       inputSchema: responseToolSchemas.empty,
       annotations: readOnly,
       async execute(args) {
@@ -43,7 +43,7 @@ export function useResponseWebMCPTools(actions: ResponseActions): ResponseWebMCP
     },
     {
       name: "find_response_partners",
-      description: "Find simulated relief partners by operational area, capability, and locally led status.",
+      description: "Find relief partners by operational area, capability, and locally led status.",
       inputSchema: responseToolSchemas.findPartners,
       annotations: readOnly,
       async execute(args) {
@@ -53,7 +53,7 @@ export function useResponseWebMCPTools(actions: ResponseActions): ResponseWebMCP
     },
     {
       name: "get_partner_details",
-      description: "Inspect a simulated partner's capabilities, operating areas, verification evidence, contact channel, and route dependency.",
+      description: "Inspect a partner's capabilities, operating areas, verification evidence, contact channel, and route dependency.",
       inputSchema: responseToolSchemas.partnerDetails,
       annotations: readOnly,
       async execute(args) {
@@ -73,7 +73,7 @@ export function useResponseWebMCPTools(actions: ResponseActions): ResponseWebMCP
     },
     {
       name: "prepare_coordination_request",
-      description: "Stage a simulated partner coordination request for human approval. If route evidence is uncertain, the result directs the coordinator to live field verification in Demo 1.",
+      description: "Stage a partner coordination request for human approval. If route evidence is uncertain, the result directs the coordinator to live field verification in Demo 1.",
       inputSchema: responseToolSchemas.coordination,
       annotations: controlled,
       async execute(args) {
@@ -83,7 +83,7 @@ export function useResponseWebMCPTools(actions: ResponseActions): ResponseWebMCP
     },
     {
       name: "get_supply_inventory",
-      description: "Read simulated relief inventory and distinguish verified shortages, adequate stock, and oversupply.",
+      description: "Read relief inventory and distinguish verified shortages, adequate stock, and oversupply.",
       inputSchema: responseToolSchemas.inventory,
       annotations: readOnly,
       async execute(args) {
@@ -93,7 +93,7 @@ export function useResponseWebMCPTools(actions: ResponseActions): ResponseWebMCP
     },
     {
       name: "draft_supply_appeal",
-      description: "Create a reviewable social appeal for a verified simulated shortage. This saves a draft and never publishes it.",
+      description: "Create a reviewable social appeal for a verified shortage. This saves a draft and never publishes it.",
       inputSchema: responseToolSchemas.appeal,
       annotations: controlled,
       async execute(args) {

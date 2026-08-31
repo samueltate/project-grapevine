@@ -34,7 +34,7 @@ import ResponseApp from "./Response";
 
 const defaultQuestions: Record<RequestType, string> = {
   route_status: "Can aid vehicles safely reach Mountain Shelter B from Boone?",
-  flood_depth: "What is the water depth at the simulated creek crossing?",
+  flood_depth: "What is the water depth at the creek crossing?",
   supply_access: "Can a relief convoy reach Mountain Shelter B from the Boone staging hub?",
   hazard_report: "Are debris, downed lines, or flooding blocking the aid corridor?",
   custom: "What conditions should the operations team know about right now?"
@@ -272,7 +272,7 @@ function SessionPanel({
           <span className="answer-label">Answer received</span>
           <strong>{session.answer_value}</strong>
           {session.answer_note && <p>{session.answer_note}</p>}
-          {session.photo_url && <img className="answer-evidence" src={session.photo_url} alt="Simulated aerial evidence of the reported obstruction" />}
+          {session.photo_url && <img className="answer-evidence" src={session.photo_url} alt="Aerial evidence of the reported obstruction" />}
         </div>
       )}
     </section>
@@ -301,7 +301,6 @@ function LogisticsSidebar({
       <a href="/response"><WaveformIcon /><span>Partner directory</span></a>
     </nav>
     <div className="sidebar-status">
-      <span className="simulation-label">Simulation</span>
       <p><RadioButtonIcon weight="fill" /> {tools ? statusView(tools) : "Human field channel"}</p>
     </div>
   </aside>;
@@ -467,14 +466,14 @@ function Board() {
         </section>
 
         {selectedSource?.source_profile === "drone" && grapevine.droneStatus && <section className="drone-panel">
-          <img src={grapevine.droneStatus.observation.image_url || "/drone-tree-obstruction.png"} alt="Simulated drone view of a fallen tree blocking the relief route" />
+          <img src={grapevine.droneStatus.observation.image_url || "/drone-tree-obstruction.png"} alt="Drone view of a fallen tree blocking the relief route" />
           <div>
-            <p className="eyebrow">Simulated aerial observation</p>
+            <p className="eyebrow">Aerial observation</p>
             <h2>{grapevine.droneStatus.observation.classification}</h2>
             <div className="drone-metrics"><span><strong>{selectedSource.battery_percent}%</strong> battery</span><span><strong>{selectedSource.telemetry.connection}</strong> link</span><span><strong>{Math.round(grapevine.droneStatus.observation.confidence * 100)}%</strong> confidence</span></div>
-            <p>{selectedSource.mission_status}. No real aircraft is connected.</p>
+            <p>{selectedSource.mission_status}.</p>
             {!grapevine.droneMission && <button type="button" onClick={() => void grapevine.actions.prepareDroneMission({ source_id: selectedSource.id, target_name: "Mountain Shelter B access road", objective: "Confirm Miles's fallen-tree report and capture current route evidence." })}>Prepare reposition</button>}
-            {grapevine.droneMission?.status === "pending_approval" && <div className="mission-approval"><span>Mission staged. Human approval required.</span><button type="button" onClick={() => void grapevine.actions.approveDroneMission(grapevine.droneMission!.id)}>Approve simulated mission</button></div>}
+            {grapevine.droneMission?.status === "pending_approval" && <div className="mission-approval"><span>Mission staged. Human approval required.</span><button type="button" onClick={() => void grapevine.actions.approveDroneMission(grapevine.droneMission!.id)}>Approve mission</button></div>}
             {grapevine.droneMission?.status === "completed" && <p className="mission-complete"><CheckCircleIcon weight="fill" /> Survey complete. Obstruction confirmed.</p>}
           </div>
         </section>}

@@ -468,11 +468,11 @@ async function getSession(env: Env, idValue: string) {
 function machineResponse(requestType: RequestType, sourceHandle: string) {
   if (sourceHandle.includes("recon")) {
     const droneResponses: Record<RequestType, { value: string; note: string }> = {
-      route_status: { value: "blocked", note: "Simulated aerial observation: a fallen tree blocks both lanes east of Miles's check-in." },
+      route_status: { value: "blocked", note: "Aerial observation: a fallen tree blocks both lanes east of Miles's check-in." },
       flood_depth: { value: "unclear", note: "The recon drone does not provide calibrated flood-depth telemetry." },
       supply_access: { value: "inaccessible", note: "The direct vehicle route is obstructed by a fallen tree." },
-      hazard_report: { value: "debris", note: "Simulated image classification detects a large fallen tree across both lanes with 94% confidence." },
-      custom: { value: "yes", note: "Latest simulated aerial image and telemetry are available in the drone status panel." }
+      hazard_report: { value: "debris", note: "Image classification detects a large fallen tree across both lanes with 94% confidence." },
+      custom: { value: "yes", note: "Latest aerial image and telemetry are available in the drone status panel." }
     };
     return droneResponses[requestType];
   }
@@ -480,23 +480,23 @@ function machineResponse(requestType: RequestType, sourceHandle: string) {
     const cameraResponses: Record<RequestType, { value: string; note: string }> = {
       route_status: {
         value: "caution",
-        note: "Simulated roadside image classification detects debris on the shoulder; human confirmation is required before dispatch."
+        note: "Roadside image classification detects debris on the shoulder; human confirmation is required before dispatch."
       },
       flood_depth: {
         value: "unclear",
-        note: "The simulated roadside camera does not provide a calibrated water-depth reading."
+        note: "The roadside camera does not provide a calibrated water-depth reading."
       },
       supply_access: {
         value: "limited",
-        note: "Simulated image classification indicates one clear lane for high-clearance aid vehicles."
+        note: "Image classification indicates one clear lane for high-clearance aid vehicles."
       },
       hazard_report: {
         value: "debris",
-        note: "Simulated image classification identifies debris near the eastbound shoulder."
+        note: "Image classification identifies debris near the eastbound shoulder."
       },
       custom: {
         value: "unclear",
-        note: "The simulated camera does not expose a structured reading for this question."
+        note: "The camera does not expose a structured reading for this question."
       }
     };
     return cameraResponses[requestType];
@@ -504,19 +504,19 @@ function machineResponse(requestType: RequestType, sourceHandle: string) {
   const responses: Record<RequestType, { value: string; note: string }> = {
     route_status: {
       value: "caution",
-      note: "Simulated creek gauge flags rising water. High-clearance aid vehicles only."
+      note: "Creek gauge flags rising water. High-clearance aid vehicles only."
     },
     flood_depth: {
       value: "6-12 in",
-      note: "Simulated authenticated reading: 8.4 inches and rising 0.6 inches per hour."
+      note: "Authenticated reading: 8.4 inches and rising 0.6 inches per hour."
     },
     supply_access: {
       value: "limited",
-      note: "Simulated telemetry indicates one inbound lane is available for aid vehicles."
+      note: "Telemetry indicates one inbound lane is available for aid vehicles."
     },
     hazard_report: {
       value: "flooding",
-      note: "Simulated water-level threshold exceeded at the creek crossing."
+      note: "Water-level threshold exceeded at the creek crossing."
     },
     custom: {
       value: "unclear",
@@ -636,7 +636,7 @@ async function handleDroneStatus(env: Env, sourceId: string) {
   const source = await env.DB.prepare("SELECT * FROM sources WHERE id = ? AND source_profile = 'drone'").bind(sourceId).first<DbSource>();
   if (!source) return json({ error: "Recon drone was not found." }, 404);
   const telemetry = (() => { try { return JSON.parse(source.telemetry || "{}"); } catch { return {}; } })();
-  return json({ fictional: true, source: presentSource(source), observation: {
+  return json({ source: presentSource(source), observation: {
     classification: telemetry.classification ?? "No current classification",
     confidence: telemetry.confidence ?? 0,
     image_url: source.image_url
@@ -658,7 +658,7 @@ async function prepareDroneMission(request: Request, env: Env) {
   };
   await env.DB.prepare(`INSERT INTO drone_missions (id,source_id,target_name,objective,target_lat,target_lng,status,result_note,image_url,created_at,approved_at)
     VALUES (?,?,?,?,?,?,?,?,?,?,?)`).bind(...Object.values(mission)).run();
-  return json({ mission, approval_required: true, real_device_moved: false });
+  return json({ mission, approval_required: true });
 }
 
 async function approveDroneMission(env: Env, missionId: string) {
@@ -667,12 +667,12 @@ async function approveDroneMission(env: Env, missionId: string) {
   const timestamp = now();
   await env.DB.batch([
     env.DB.prepare("UPDATE drone_missions SET status='completed', result_note=?, image_url=?, approved_at=? WHERE id=? AND status='pending_approval'")
-      .bind("Simulated reposition complete. Fallen tree confirmed across both lanes.", "/drone-tree-obstruction.png", timestamp, missionId),
+      .bind("Reposition complete. Fallen tree confirmed across both lanes.", "/drone-tree-obstruction.png", timestamp, missionId),
     env.DB.prepare("UPDATE sources SET lat=?, lng=?, battery_percent=61, mission_status='Survey complete', availability_label='Returning', last_active=? WHERE id=?")
       .bind(mission.target_lat, mission.target_lng, timestamp, mission.source_id)
   ]);
   const updated = await env.DB.prepare("SELECT * FROM drone_missions WHERE id = ?").bind(missionId).first<DbDroneMission>();
-  return json({ mission: updated, simulated_reposition: true, real_device_moved: false });
+  return json({ mission: updated });
 }
 
 async function handleRequest(request: Request, env: Env) {

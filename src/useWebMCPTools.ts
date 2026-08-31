@@ -20,13 +20,13 @@ const annotations = {
 
 const operationsActionCatalog = [
   { tool: "list_available_actions", description: "List every WebMCP action available on the Operations page and explain what each one does." },
-  { tool: "find_available_sources", description: "Find nearby human responders, sensors, and the simulated recon drone." },
+  { tool: "find_available_sources", description: "Find nearby human responders, sensors, and the recon drone." },
   { tool: "get_web_baseline", description: "Read the earlier published status for an operational area before seeking a live update." },
   { tool: "prepare_source_request", description: "Draft a structured question for a human or machine source without sending it." },
   { tool: "send_source_request", description: "Send a prepared source question after the user explicitly approves it." },
   { tool: "get_response", description: "Retrieve the structured answer to an authorized source request." },
-  { tool: "get_drone_status", description: "Read the simulated recon drone's status, position, and latest aerial observation." },
-  { tool: "prepare_drone_mission", description: "Stage a simulated drone repositioning mission for visible human approval." }
+  { tool: "get_drone_status", description: "Read the recon drone's status, position, and latest aerial observation." },
+  { tool: "prepare_drone_mission", description: "Stage a drone repositioning mission for visible human approval." }
 ] as const;
 
 export type WebMCPToolsState = {
@@ -177,7 +177,7 @@ export function useWebMCPTools(actions: GrapevineActions): WebMCPToolsState {
             request,
             sent: true,
             message: request.status === "answered"
-              ? "The request was sent and the simulated machine source answered."
+              ? "The request was sent and the machine source answered."
               : "The request was sent to the selected human source."
           };
         }
@@ -196,7 +196,7 @@ export function useWebMCPTools(actions: GrapevineActions): WebMCPToolsState {
       getDroneStatus: {
         name: "get_drone_status",
         description:
-          "Read simulated recon-drone battery, connection, position, mission status, and latest aerial observation.",
+          "Read recon-drone battery, connection, position, mission status, and latest aerial observation.",
         inputSchema: toolInputSchemas.getDroneStatus,
         annotations: { ...annotations, readOnlyHint: true },
         async execute(args: unknown) {
@@ -207,7 +207,7 @@ export function useWebMCPTools(actions: GrapevineActions): WebMCPToolsState {
       prepareDroneMission: {
         name: "prepare_drone_mission",
         description:
-          "Stage a simulated drone repositioning mission for visible human approval. This never moves a real device.",
+          "Stage a drone repositioning mission for visible human approval.",
         inputSchema: toolInputSchemas.prepareDroneMission,
         annotations,
         async execute(args: unknown) {

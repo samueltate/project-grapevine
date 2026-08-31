@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { collapseSourceIdentities } from "./server";
+import { routeEvidenceReady } from "./responseServer";
 
 function source(id: string, handle: string, last_active: string) {
   return {
@@ -36,5 +37,17 @@ describe("driver identity", () => {
     ]);
 
     expect(result.map(({ id }) => id).sort()).toEqual(["src-ava", "src-new"]);
+  });
+});
+
+describe("response evidence continuity", () => {
+  it("recognizes a blocked route report as sufficient for debris clearance", () => {
+    expect(routeEvidenceReady("debris_clearance", { answer_value: "blocked" })).toBe(true);
+    expect(routeEvidenceReady("debris_clearance", { answer_value: "passable" })).toBe(false);
+  });
+
+  it("requires a passable report for supply movement", () => {
+    expect(routeEvidenceReady("transport", { answer_value: "passable" })).toBe(true);
+    expect(routeEvidenceReady("transport", { answer_value: "blocked" })).toBe(false);
   });
 });

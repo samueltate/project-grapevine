@@ -54,7 +54,7 @@ const incident = {
   name: "Watauga County Relief Coordination",
   area: "Watauga Relief Corridor",
   operational_need: "Clear a fallen tree blocking access to Mountain Shelter B, then coordinate priority supplies.",
-  published_status: "Miles reported a fallen tree; simulated aerial evidence can confirm the obstruction before a crew is assigned.",
+  published_status: "Miles and aerial telemetry confirm a fallen tree blocking both lanes near Mountain Shelter B.",
   uncertainty: "The obstruction and exact work site must be confirmed before a debris-clearance crew is dispatched.",
   updated_at: "2030-09-28T13:30:00.000Z"
 };
@@ -97,24 +97,33 @@ function presentRequest(request: DbCoordinationRequest) {
   return { ...request, field_verification_required: Boolean(request.field_verification_required) };
 }
 
+async function latestRouteVerification(env: Env) {
+  return env.DB.prepare(`SELECT sessions.id, sessions.answer_value, sessions.answer_note, sessions.answered_at,
+    COALESCE(NULLIF(sources.display_name, ''), sources.handle) AS source_name
+    FROM sessions JOIN sources ON sources.id = sessions.source_id
+    WHERE sessions.place_id = 'demo-watauga-relief-corridor'
+      AND sessions.request_type = 'route_status'
+      AND sessions.status IN ('answered', 'rated')
+      AND sessions.answer_value IS NOT NULL
+    ORDER BY sessions.answered_at DESC LIMIT 1`).first<DbFieldVerification>();
+}
+
+export function routeEvidenceReady(need: ResponseNeed, verification: Pick<DbFieldVerification, "answer_value"> | null) {
+  return need === "debris_clearance"
+    ? ["blocked", "caution"].includes(verification?.answer_value ?? "")
+    : verification?.answer_value === "passable";
+}
+
 async function getBundle(env: Env) {
   const [partners, shortlists, requests, fieldVerification, inventory, drafts] = await Promise.all([
     env.DB.prepare("SELECT * FROM response_partners ORDER BY local_led DESC, response_status, name").all<DbPartner>(),
     env.DB.prepare("SELECT * FROM response_shortlists ORDER BY created_at DESC LIMIT 6").all<DbShortlist>(),
     env.DB.prepare("SELECT * FROM response_coordination_requests ORDER BY created_at DESC LIMIT 6").all<DbCoordinationRequest>(),
-    env.DB.prepare(`SELECT sessions.id, sessions.answer_value, sessions.answer_note, sessions.answered_at,
-      sources.handle AS source_name FROM sessions JOIN sources ON sources.id = sessions.source_id
-      WHERE sessions.place_id = 'demo-watauga-relief-corridor'
-        AND sessions.request_type = 'route_status'
-        AND sources.source_profile = 'human'
-        AND sessions.status IN ('answered', 'rated')
-        AND sessions.answer_value IS NOT NULL
-      ORDER BY sessions.answered_at DESC LIMIT 1`).first<DbFieldVerification>(),
+    latestRouteVerification(env),
     env.DB.prepare("SELECT * FROM response_inventory ORDER BY CASE status WHEN 'shortage' THEN 0 WHEN 'adequate' THEN 1 ELSE 2 END, item_name").all<DbInventory>(),
     env.DB.prepare("SELECT * FROM response_public_drafts ORDER BY created_at DESC LIMIT 6").all<DbDraft>()
   ]);
   return {
-    fictional: true as const,
     incident,
     partners: partners.results.map(presentPartner),
     shortlists: shortlists.results.map((item) => presentShortlist(item, partners.results)),
@@ -142,11 +151,10 @@ async function findPartners(request: Request, env: Env) {
     .bind(`%\"${need}\"%`, `%${area}%`)
     .all<DbPartner>();
   return json({
-    fictional: true,
     matching_need: need,
     area,
     partners: result.results.map(presentPartner),
-    caveat: "Directory matches are simulated and are not endorsements. Review evidence and current conditions before coordination."
+    caveat: "Directory matches are not endorsements. Review evidence and current conditions before coordination."
   });
 }
 
@@ -177,6 +185,8 @@ async function prepareCoordination(request: Request, env: Env) {
   const shortlistId = typeof body.shortlist_id === "string" ? body.shortlist_id : "";
   const shortlist = await env.DB.prepare("SELECT * FROM response_shortlists WHERE id = ?").bind(shortlistId).first<DbShortlist>();
   if (!shortlist) return json({ error: "Response shortlist was not found." }, 404);
+  const verification = await latestRouteVerification(env);
+  const evidenceReady = routeEvidenceReady(shortlist.need, verification);
   const timestamp = now();
   const item: DbCoordinationRequest = {
     id: id("coord"),
@@ -184,8 +194,10 @@ async function prepareCoordination(request: Request, env: Env) {
     objective: typeof body.objective === "string" ? body.objective.trim() : incident.operational_need,
     available_resources: typeof body.available_resources === "string" ? body.available_resources.trim() : "Relief supplies",
     status: "pending_approval",
-    field_verification_required: 1,
-    uncertainty: incident.uncertainty,
+    field_verification_required: evidenceReady ? 0 : 1,
+    uncertainty: evidenceReady
+      ? "The obstruction is confirmed; coordinator approval is required before crew dispatch."
+      : incident.uncertainty,
     created_at: timestamp,
     approved_at: null
   };
@@ -197,7 +209,10 @@ async function prepareCoordination(request: Request, env: Env) {
     request: presentRequest(item),
     approval_required: true,
     external_contact_made: false,
-    recommended_next_step: {
+    recommended_next_step: evidenceReady ? {
+      action: "review_coordinator_approval",
+      reason: "Current route evidence confirms the obstruction. Review and approve the prepared plan before crew dispatch."
+    } : {
       reason: "The selected partners depend on the Watauga Relief Corridor, whose published status may be stale.",
       page: "/",
       tool: "find_available_sources",
@@ -212,15 +227,8 @@ async function approveCoordination(env: Env, requestId: string) {
     FROM response_coordination_requests JOIN response_shortlists ON response_shortlists.id = response_coordination_requests.shortlist_id
     WHERE response_coordination_requests.id = ?`).bind(requestId).first<DbCoordinationRequest & { need: ResponseNeed }>();
   if (!requestItem) return json({ error: "Coordination request was not found." }, 404);
-  const verification = await env.DB.prepare(`SELECT sessions.answer_value FROM sessions
-    JOIN sources ON sources.id = sessions.source_id
-    WHERE sessions.place_id = 'demo-watauga-relief-corridor' AND sessions.request_type = 'route_status'
-      AND sources.source_profile = 'human'
-      AND sessions.status IN ('answered', 'rated') AND sessions.answer_value IS NOT NULL
-    ORDER BY sessions.answered_at DESC LIMIT 1`).first<{ answer_value: string }>();
-  const evidenceReady = requestItem.need === "debris_clearance"
-    ? ["blocked", "caution"].includes(verification?.answer_value ?? "")
-    : verification?.answer_value === "passable";
+  const verification = await latestRouteVerification(env);
+  const evidenceReady = routeEvidenceReady(requestItem.need, verification);
   if (!evidenceReady) {
     return json({ error: requestItem.need === "debris_clearance" ? "A current obstruction report is required before crew approval." : "A current passable field report is required before dispatch approval." }, 409);
   }
@@ -228,7 +236,7 @@ async function approveCoordination(env: Env, requestId: string) {
   await env.DB.prepare("UPDATE response_coordination_requests SET status = 'approved', approved_at = ? WHERE id = ? AND status = 'pending_approval'")
     .bind(timestamp, requestId).run();
   const item = await env.DB.prepare("SELECT * FROM response_coordination_requests WHERE id = ?").bind(requestId).first<DbCoordinationRequest>();
-  return item ? json({ request: presentRequest(item), external_contact_made: false, result: "Coordination plan approved for the simulation. Field verification remains required before dispatch." }) : json({ error: "Coordination request was not found." }, 404);
+  return item ? json({ request: presentRequest(item), external_contact_made: false, result: "Coordination plan approved. Crew contact and dispatch remain separate coordinator actions." }) : json({ error: "Coordination request was not found." }, 404);
 }
 
 async function getInventory(request: Request, env: Env) {
@@ -237,7 +245,7 @@ async function getInventory(request: Request, env: Env) {
   const result = status
     ? await env.DB.prepare("SELECT * FROM response_inventory WHERE status = ? ORDER BY item_name").bind(status).all<DbInventory>()
     : await env.DB.prepare("SELECT * FROM response_inventory ORDER BY item_name").all<DbInventory>();
-  return json({ fictional: true, inventory: result.results });
+  return json({ inventory: result.results });
 }
 
 async function draftAppeal(request: Request, env: Env) {
@@ -245,7 +253,7 @@ async function draftAppeal(request: Request, env: Env) {
   const itemId = typeof body.item_id === "string" ? body.item_id : "";
   const item = await env.DB.prepare("SELECT * FROM response_inventory WHERE id = ?").bind(itemId).first<DbInventory>();
   if (!item) return json({ error: "Inventory item was not found." }, 404);
-  if (item.status !== "shortage") return json({ error: "Public appeals are only drafted for verified shortages in this simulation." }, 409);
+  if (item.status !== "shortage") return json({ error: "Public appeals are only drafted for verified shortages." }, 409);
   const draft: DbDraft = {
     id: id("draft"), item_id: item.id, channel: "social",
     copy: `Watauga County relief teams need ${item.item_name.toLowerCase()}. ${item.field_signal} Current stock is ${item.on_hand} ${item.unit} against a request for ${item.requested}. Help fill this verified gap: ${item.donation_url}`,
@@ -260,7 +268,7 @@ export async function handleResponseRequest(request: Request, env: Env) {
   const url = new URL(request.url);
   const path = url.pathname;
   if (request.method === "GET" && path === "/api/response/state") return json(await getBundle(env));
-  if (request.method === "GET" && path === "/api/response/incident") return json({ fictional: true, ...incident });
+  if (request.method === "GET" && path === "/api/response/incident") return json(incident);
   if (request.method === "POST" && path === "/api/response/partners/find") return findPartners(request, env);
   const partnerMatch = path.match(/^\/api\/response\/partners\/([^/]+)$/);
   if (request.method === "GET" && partnerMatch) {

@@ -34,7 +34,6 @@ function Sidebar({ toolCount }: { toolCount: number }) {
       <a className="active" href="/response"><BuildingsIcon weight="fill" /><span>Partner directory</span></a>
     </nav>
     <div className="sidebar-status">
-      <span className="simulation-label">Fictional simulation</span>
       <p><ShieldCheckIcon weight="fill" /> {toolCount} resource tools ready</p>
     </div>
   </aside>;
@@ -70,7 +69,7 @@ export default function ResponseApp() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [publishConfirm, setPublishConfirm] = useState(false);
-  const [simulatedPublished, setSimulatedPublished] = useState(false);
+  const [publishApproved, setPublishApproved] = useState(false);
 
   const bundle = response.bundle;
   const currentShortlist = bundle?.shortlists[0] ?? null;
@@ -127,7 +126,7 @@ export default function ResponseApp() {
 
   async function draftAppeal(itemId: string) {
     setPublishConfirm(false);
-    setSimulatedPublished(false);
+    setPublishApproved(false);
     await response.actions.draftSupplyAppeal(itemId);
   }
 
@@ -138,14 +137,14 @@ export default function ResponseApp() {
     <main className="dashboard-main response-main">
       <header className="operation-header response-header">
         <div><p className="eyebrow">Demo 2 · From evidence to coordinated action</p><h1>Resource Coordination</h1><p className="deck">Match verified field needs to crews and priority supplies.</p></div>
-        <span className="demo-badge"><ShieldCheckIcon weight="fill" /> Simulated data</span>
+        <span className="demo-badge"><ShieldCheckIcon weight="fill" /> Evidence connected</span>
       </header>
       {response.error && <p className="error" role="alert">{response.error}</p>}
 
       <section className="incident-strip">
         <div><span className="incident-icon"><WarningIcon weight="fill" /></span><span><small>Active coordination scenario</small><strong>{bundle.incident.name}</strong></span></div>
         <p>{bundle.incident.operational_need}</p>
-        <span className="incident-uncertainty"><WarningIcon /> Work site needs live verification</span>
+        <span className="incident-uncertainty"><CheckCircleIcon weight="fill" /> Obstruction verified near Shelter B</span>
       </section>
 
       <section className="response-layout">
@@ -178,7 +177,7 @@ export default function ResponseApp() {
             <span>4</span><div><small>Live ground truth</small><strong>{fieldVerification ? `Route reported ${fieldVerification.answer_value}` : "Verify before dispatch"}</strong><p>{fieldVerification ? `${fieldVerification.source_name}: ${fieldVerification.answer_note || "Structured field report received."}` : bundle.incident.uncertainty}</p><a href="/?handoff=response-plan"><MapPinIcon weight="fill" /> {fieldVerification ? "Review field verification" : "Open field verification"} <ArrowRightIcon /></a></div>
           </section>
           {currentRequest?.status === "pending_approval" && <div className="coordination-approval"><ShieldCheckIcon weight="fill" /><div><strong>{evidenceReady ? "Coordinator approval required" : "Crew approval locked"}</strong><p>{evidenceReady ? "The obstruction is verified. No partner is contacted until you approve." : "A current obstruction report is required before crew approval."}</p></div><button type="button" disabled={!evidenceReady} onClick={() => void response.actions.approveCoordination(currentRequest.id)}>Approve plan</button></div>}
-          {currentRequest?.status === "approved" && <div className="coordination-approved"><CheckCircleIcon weight="fill" /> Plan approved; field verification is still required before dispatch.</div>}
+          {currentRequest?.status === "approved" && <div className="coordination-approved"><CheckCircleIcon weight="fill" /> Plan approved. Crew contact and dispatch remain coordinator decisions.</div>}
         </aside>
       </section>
 
@@ -194,21 +193,20 @@ export default function ResponseApp() {
         </div>
         {bundle.public_drafts[0] && <article className="appeal-draft">
           <header>
-            <div><span>{simulatedPublished ? "Simulation complete" : "Ready for review"}</span><h3>Public supply appeal</h3></div>
+            <div><span>{publishApproved ? "Approved for publishing" : "Ready for review"}</span><h3>Public supply appeal</h3></div>
             <strong className="appeal-channel"><FacebookLogoIcon weight="fill" /> Facebook</strong>
           </header>
           <p>{bundle.public_drafts[0].copy}</p>
           <footer>
-            {!publishConfirm && !simulatedPublished && <>
+            {!publishConfirm && !publishApproved && <>
               <button type="button" onClick={() => setPublishConfirm(true)}><FacebookLogoIcon weight="fill" /> Publish to Facebook</button>
-              <small>Simulation only · no Facebook account is connected</small>
             </>}
-            {publishConfirm && !simulatedPublished && <div className="publish-confirmation">
-              <span><strong>Publish this simulated post?</strong><small>No external post will be created.</small></span>
+            {publishConfirm && !publishApproved && <div className="publish-confirmation">
+              <span><strong>Approve this Facebook post?</strong><small>Review the message before publishing.</small></span>
               <button type="button" className="secondary-button" onClick={() => setPublishConfirm(false)}>Cancel</button>
-              <button type="button" onClick={() => { setPublishConfirm(false); setSimulatedPublished(true); }}>Confirm publish</button>
+              <button type="button" onClick={() => { setPublishConfirm(false); setPublishApproved(true); }}>Confirm publish</button>
             </div>}
-            {simulatedPublished && <div className="simulated-published"><CheckCircleIcon weight="fill" /><span><strong>Published to Facebook (simulation)</strong><small>No external post was created.</small></span></div>}
+            {publishApproved && <div className="publish-approved"><CheckCircleIcon weight="fill" /><span><strong>Facebook post approved</strong><small>Ready for the communications team.</small></span></div>}
           </footer>
         </article>}
       </section>

@@ -54,7 +54,7 @@ const machineSource = {
   trust_score: 0.95,
   source_kind: "system" as const,
   source_profile: "sensor" as const,
-  verification_label: "Authenticated sensor feed (simulated)",
+  verification_label: "Authenticated sensor feed",
   offered: ["flood_depth", "route_status", "hazard_report"]
 };
 
@@ -85,7 +85,7 @@ const responsePartner = {
   areas: ["Watauga Relief Corridor", "Watauga County"],
   response_status: "active" as const,
   verification_status: "confirmed" as const,
-  verification_note: "Simulated operations check-in confirmed at the Boone Staging Hub.",
+  verification_note: "Operations check-in confirmed at the Boone Staging Hub.",
   contact_channel: "operations@highcountry.example",
   local_led: true,
   route_dependency: "Watauga Relief Corridor",
@@ -93,7 +93,6 @@ const responsePartner = {
 };
 
 const responseBundle = {
-  fictional: true as const,
   incident: {
     id: "helene-watauga-reference",
     name: "Watauga County Relief Coordination",

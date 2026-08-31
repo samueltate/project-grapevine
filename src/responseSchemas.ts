@@ -65,7 +65,6 @@ export type PublicAppealDraft = {
 };
 
 export type ResponseBundle = {
-  fictional: true;
   incident: {
     id: string;
     name: string;
