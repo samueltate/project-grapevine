@@ -15,6 +15,7 @@ UPDATE sources SET
   handle = 'miles828', display_name = 'Miles Carter', source_profile = 'human',
   verification_label = 'Responder check-in confirmed', channel_label = 'Radio CH 3',
   availability_label = 'Available', lat = 36.2181, lng = -81.6764,
+  location_name = 'Junaluska Community road access',
   offered = '["route_status","supply_access","hazard_report"]', online = 1,
   checked_in_at = CURRENT_TIMESTAMP, last_active = CURRENT_TIMESTAMP
 WHERE id = 'src-boone-field';
@@ -38,16 +39,17 @@ INSERT INTO sources (
   channel_label, availability_label, battery_percent, mission_status, image_url, telemetry
 ) VALUES (
   'src-recon-drone', 'watauga-recon-1', 0.94, 'demo-watauga-relief-corridor',
-  'Watauga Relief Corridor', 'system', 'Authenticated aerial telemetry',
+  'Above Junaluska Community', 'system', 'Authenticated aerial telemetry',
   36.2208, -81.6723, '["route_status","supply_access","hazard_report"]', 1,
   CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
   'Watauga Recon 1', 'drone', 'Mesh link · strong', 'Available', 68,
-  'Holding over relief corridor', '/drone-tree-obstruction.png',
-  '{"connection":"Strong","flight_time_remaining_min":24,"wind_mph":7,"gps_accuracy_m":2,"classification":"Fallen tree blocks both lanes"}'
+  'Holding 0.3 mi northeast of Miles Carter', '/drone-tree-obstruction.png',
+  '{"connection":"Strong","flight_time_remaining_min":24,"wind_mph":7,"gps_accuracy_m":2,"classification":"Fallen tree blocks both lanes on the Mountain Shelter B access route"}'
 ) ON CONFLICT(id) DO UPDATE SET
   handle = excluded.handle, display_name = excluded.display_name,
   source_profile = excluded.source_profile, verification_label = excluded.verification_label,
-  lat = excluded.lat, lng = excluded.lng, offered = excluded.offered, online = 1,
+  location_name = excluded.location_name, lat = excluded.lat, lng = excluded.lng,
+  offered = excluded.offered, online = 1,
   checked_in_at = excluded.checked_in_at, last_active = excluded.last_active,
   channel_label = excluded.channel_label, availability_label = excluded.availability_label,
   battery_percent = excluded.battery_percent, mission_status = excluded.mission_status,

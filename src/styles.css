@@ -73,6 +73,7 @@ a { color: inherit; }
 .map-legend i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
 .map-legend i.system { border-radius: 2px; background: var(--sensor); }
 .map-legend i.drone { background: #765f2f; }
+.map-legend i.incident { border-radius: 2px; background: #9a4b2f; }
 .map-caption { position: absolute; z-index: 2; top: 12px; right: 12px; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(200,208,204,.9); border-radius: 5px; background: rgba(255,255,255,.94); color: #41504a; font-size: .68rem; font-weight: 700; padding: 7px 9px; }
 .map-caption svg { width: 14px; height: 14px; color: var(--accent); }
 .map-marker { position: absolute; z-index: 2; display: grid; width: 34px; height: 34px; place-items: center; border: 2px solid #fff; border-radius: 50%; background: var(--accent); box-shadow: 0 2px 6px rgba(22,37,31,.3); color: #fff; font-size: .68rem; font-weight: 900; padding: 0; transform: translate(-50%,-50%); }
@@ -80,6 +81,7 @@ a { color: inherit; }
 .map-marker.sensor { border-radius: 7px; background: var(--sensor); }
 .map-marker.drone { border-radius: 7px; background: #765f2f; }
 .map-marker.selected { box-shadow: 0 0 0 4px rgba(31,107,87,.22), 0 3px 7px rgba(22,37,31,.4); }
+.incident-marker { position: absolute; z-index: 3; display: grid; width: 25px; height: 25px; place-items: center; border: 2px solid #fff; border-radius: 4px; background: #9a4b2f; box-shadow: 0 2px 6px rgba(22,37,31,.3); color: #fff; font-size: .72rem; font-weight: 900; transform: translate(-50%,-50%); }
 
 .intelligence-panel { display: flex; flex-direction: column; }
 .intelligence-panel > .panel-title { border-bottom: 1px solid var(--line); }

@@ -130,9 +130,13 @@ function SourceMap({
   onSelect: (source: Source) => void;
 }) {
   const bounds = { west: -81.685, east: -81.663, south: 36.208, north: 36.225 };
-  const markerPosition = (source: Source) => ({
+  const markerPosition = (source: Pick<Source, "lat" | "lng">) => ({
     left: `${((source.lng - bounds.west) / (bounds.east - bounds.west)) * 100}%`,
     top: `${((bounds.north - source.lat) / (bounds.north - bounds.south)) * 100}%`
+  });
+  const obstructionPosition = markerPosition({
+    lat: 36.21945,
+    lng: -81.67435
   });
 
   return (
@@ -152,14 +156,22 @@ function SourceMap({
             {source.source_profile === "drone" ? "D" : source.source_profile === "sensor" ? "S" : "H"}
           </button>
         ))}
+        <span
+          className="incident-marker"
+          style={obstructionPosition}
+          role="img"
+          aria-label="Fallen tree blocking the Mountain Shelter B access route"
+          title="Fallen tree blocking both lanes"
+        >!</span>
       </div>
       <div className="map-legend" aria-label="Map legend">
         <span><i className="human" /> Human</span>
         <span><i className="system" /> Sensor</span>
         <span><i className="drone" /> Drone</span>
+        <span><i className="incident" /> Blockage</span>
       </div>
       <div className="map-caption">
-        <MapPinIcon weight="fill" /> Boone and the Watauga relief corridor
+        <MapPinIcon weight="fill" /> Junaluska Community incident area
       </div>
     </div>
   );
@@ -191,7 +203,7 @@ function SourceRoster({
             <span className={`source-symbol ${source.source_profile}`}>
               {source.source_profile === "drone" ? <DroneIcon /> : source.source_profile === "sensor" ? <GaugeIcon /> : <UsersThreeIcon />}
             </span>
-            <span><strong>{sourceDisplayName(source)}</strong><small>{sourceKindLabel(source)}</small></span>
+            <span><strong>{sourceDisplayName(source)}</strong><small>{sourceKindLabel(source)} · {source.location_name}</small></span>
           </div>
           <div className="roster-verification" data-label="Verification">
             <CheckCircleIcon weight="fill" /><span>{verificationLabel(source)}</span>

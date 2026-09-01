@@ -30,7 +30,7 @@ const source = {
   handle: "miles828",
   trust_score: 0.91,
   place_id: spot.place_id,
-  location_name: spot.name,
+  location_name: "Junaluska Community road access",
   source_kind: "human" as const,
   verification_label: "Field responder check-in",
   lat: spot.lat,
@@ -200,6 +200,8 @@ describe("Grapevine board", () => {
     expect(await screen.findByRole("heading", { name: "Watauga Relief Corridor" })).toBeInTheDocument();
     expect(await screen.findByDisplayValue("Watauga Relief Corridor")).toBeInTheDocument();
     expect((await screen.findAllByText("Miles Carter")).length).toBeGreaterThan(0);
+    expect(screen.getByText("Field responder · Junaluska Community road access")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Fallen tree blocking the Mountain Shelter B access route" })).toBeInTheDocument();
     expect(screen.getByText("Creek depth sensor")).toBeInTheDocument();
     expect(screen.getByText("Earlier update says the route was open")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Field inbox" })).toHaveAttribute("href", "/drive");
