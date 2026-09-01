@@ -101,6 +101,12 @@ export function useGrapevine() {
     );
   }, [refresh]);
 
+  const refreshInBackground = useCallback(() => {
+    void refresh().catch((caught: unknown) =>
+      setError(caught instanceof Error ? caught.message : "Could not refresh Grapevine.")
+    );
+  }, [refresh]);
+
   useEffect(() => {
     const refreshWhenVisible = () => {
       if (document.visibilityState !== "hidden") {
@@ -153,10 +159,10 @@ export function useGrapevine() {
         body: JSON.stringify({ source_id, request_type, question })
       });
       setActiveSession(result.session);
-      await refresh();
+      refreshInBackground();
       return result.session;
     },
-    [refresh]
+    [refreshInBackground]
   );
 
   const approveSession = useCallback(
@@ -166,10 +172,10 @@ export function useGrapevine() {
         { method: "POST" }
       );
       setActiveSession(result.session);
-      await refresh();
+      refreshInBackground();
       return result.session;
     },
-    [refresh]
+    [refreshInBackground]
   );
 
   const getSession = useCallback(async (session_id: string) => {
@@ -202,10 +208,10 @@ export function useGrapevine() {
           body: JSON.stringify({ answer_value, answer_note })
         }
       );
-      await refresh();
+      refreshInBackground();
       return result.session;
     },
-    [refresh]
+    [refreshInBackground]
   );
 
   const getDroneStatus = useCallback(async (source_id: string) => {
@@ -223,9 +229,9 @@ export function useGrapevine() {
   const approveDroneMission = useCallback(async (mission_id: string) => {
     const result = await api<{ mission: DroneMission }>(`/api/drone-missions/${encodeURIComponent(mission_id)}/approve`, { method: "POST" });
     setDroneMission(result.mission);
-    await refresh();
+    refreshInBackground();
     return result.mission;
-  }, [refresh]);
+  }, [refreshInBackground]);
 
   const checkIn = useCallback(
     async (input: CheckInInput) => {
@@ -233,10 +239,10 @@ export function useGrapevine() {
         method: "POST",
         body: JSON.stringify(input)
       });
-      await refresh();
+      refreshInBackground();
       return result.source;
     },
-    [refresh]
+    [refreshInBackground]
   );
 
   const loadDriver = useCallback(

@@ -38,6 +38,10 @@ export function useResponse() {
     void refresh().catch((caught: unknown) => setError(caught instanceof Error ? caught.message : "Could not load response directory."));
   }, [refresh]);
 
+  const refreshInBackground = useCallback(() => {
+    void refresh().catch((caught: unknown) => setError(caught instanceof Error ? caught.message : "Could not refresh response directory."));
+  }, [refresh]);
+
   useEffect(() => {
     const refreshWhenVisible = () => {
       if (document.visibilityState !== "hidden") {
@@ -63,19 +67,19 @@ export function useResponse() {
   const getPartnerDetails = useCallback((partnerId: string) => api<ResponsePartner>(`/api/response/partners/${encodeURIComponent(partnerId)}`), []);
   const createShortlist = useCallback(async (input: { title: string; need: ResponseNeed; area: string; partner_ids: string[]; rationale: string }) => {
     const result = await api<{ shortlist: ResponseShortlist }>("/api/response/shortlists", { method: "POST", body: JSON.stringify(input) });
-    await refresh();
+    refreshInBackground();
     return result.shortlist;
-  }, [refresh]);
+  }, [refreshInBackground]);
   const prepareCoordination = useCallback(async (input: { shortlist_id: string; objective: string; available_resources: string }) => {
     const result = await api<{ request: CoordinationRequest; approval_required: true; recommended_next_step: Record<string, string> }>("/api/response/requests", { method: "POST", body: JSON.stringify(input) });
-    await refresh();
+    refreshInBackground();
     return result;
-  }, [refresh]);
+  }, [refreshInBackground]);
   const approveCoordination = useCallback(async (requestId: string) => {
     const result = await api<{ request: CoordinationRequest }>(`/api/response/requests/${encodeURIComponent(requestId)}/approve`, { method: "POST" });
-    await refresh();
+    refreshInBackground();
     return result.request;
-  }, [refresh]);
+  }, [refreshInBackground]);
   const resetWorkRequest = useCallback(async () => {
     const result = await api<{ reset: true; workspace: ResponseBundle }>("/api/response/work-request/reset", { method: "POST" });
     setBundle(result.workspace);
@@ -84,9 +88,9 @@ export function useResponse() {
   const getSupplyInventory = useCallback((status?: SupplyInventoryItem["status"]) => api<{ inventory: SupplyInventoryItem[] }>("/api/response/inventory", { method: "POST", body: JSON.stringify({ status }) }), []);
   const draftSupplyAppeal = useCallback(async (itemId: string) => {
     const result = await api<{ draft: PublicAppealDraft }>("/api/response/appeals", { method: "POST", body: JSON.stringify({ item_id: itemId }) });
-    await refresh();
+    refreshInBackground();
     return result.draft;
-  }, [refresh]);
+  }, [refreshInBackground]);
 
   const actions = useMemo<ResponseActions>(() => ({
     refresh, getIncidentBrief, findPartners, getPartnerDetails, createShortlist, prepareCoordination, approveCoordination, resetWorkRequest, getSupplyInventory, draftSupplyAppeal
