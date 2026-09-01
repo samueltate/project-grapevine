@@ -1,19 +1,7 @@
-import "react";
+export {};
 
-// These declarations cover the experimental WebMCP surface used by this demo
-// until the attributes and browser APIs ship in React and TypeScript's DOM types.
-declare module "react" {
-  interface FormHTMLAttributes<T> {
-    toolname?: string;
-    tooldescription?: string;
-    toolautosubmit?: "";
-  }
-
-  interface InputHTMLAttributes<T> {
-    toolparamdescription?: string;
-  }
-}
-
+// These declarations cover the experimental WebMCP imperative-registration
+// surface used by this demo until the browser API ships in TypeScript's DOM types.
 declare global {
   interface WebMCPTool {
     name: string;
@@ -37,10 +25,5 @@ declare global {
         options?: WebMCPRegisterToolOptions
       ): void | Promise<void>;
     };
-  }
-
-  interface SubmitEvent {
-    readonly agentInvoked: boolean;
-    respondWith(response: Promise<unknown>): void;
   }
 }
