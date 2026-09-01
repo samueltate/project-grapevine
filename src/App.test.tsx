@@ -195,11 +195,10 @@ beforeEach(() => {
 
 describe("Grapevine board", () => {
   it("loads the seeded baseline and source picker", async () => {
-    installFetch();
+    const fetchMock = installFetch();
     render(<App />);
 
     expect(await screen.findByRole("heading", { name: "Watauga Relief Corridor" })).toBeInTheDocument();
-    expect(await screen.findByDisplayValue("Watauga Relief Corridor")).toBeInTheDocument();
     expect((await screen.findAllByText("Miles Carter")).length).toBeGreaterThan(0);
     expect(screen.getByText("Field responder · Junaluska Community road access")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Fallen tree blocking the Mountain Shelter B access route" })).toBeInTheDocument();
@@ -209,9 +208,13 @@ describe("Grapevine board", () => {
     expect(screen.getByRole("link", { name: "Field inbox" })).toHaveAttribute("href", "/drive");
     expect(screen.queryByText(/payment/i)).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("Operational area"), { target: { value: "Other area" } });
+    expect(screen.queryByLabelText("Operational area")).not.toBeInTheDocument();
+    fetchMock.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Reset" }));
-    expect(screen.getByDisplayValue("Watauga Relief Corridor")).toBeInTheDocument();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      "/api/sources/find",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ near: "Watauga Relief Corridor", radius_m: 5000 }) })
+    ));
   });
 
   it("creates an approval-gated request by hand", async () => {

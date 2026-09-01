@@ -19,8 +19,7 @@ import {
 import {
   useEffect,
   useMemo,
-  useState,
-  type FormEvent
+  useState
 } from "react";
 import {
   answerOptions,
@@ -325,7 +324,6 @@ function LogisticsSidebar({
 function Board() {
   const grapevine = useGrapevine();
   const webMCP = useWebMCPTools(grapevine.actions);
-  const [near, setNear] = useState("Watauga Relief Corridor");
   const [requestType, setRequestType] = useState<RequestType>("route_status");
   const [question, setQuestion] = useState(defaultQuestions.route_status);
   const [busy, setBusy] = useState(false);
@@ -340,8 +338,8 @@ function Board() {
     );
   }, [selectedSource]);
 
-  async function runDiscovery(event?: FormEvent, area = near) {
-    event?.preventDefault();
+  async function runDiscovery() {
+    const area = "Watauga Relief Corridor";
     setBusy(true);
     grapevine.setError(null);
     try {
@@ -357,9 +355,7 @@ function Board() {
   }
 
   function resetArea() {
-    const area = "Watauga Relief Corridor";
-    setNear(area);
-    void runDiscovery(undefined, area);
+    void runDiscovery();
   }
 
   function selectSource(source: Source) {
@@ -422,15 +418,9 @@ function Board() {
             <h1>Watauga Relief Corridor</h1>
             <p className="deck">Boone Staging Hub to Mountain Shelter B</p>
           </div>
-          <form className="area-control" onSubmit={runDiscovery}>
-            <label htmlFor="near">Operational area</label>
-            <div>
-              <input id="near" value={near} onChange={(event) => setNear(event.target.value)} />
-              <button className="reset-area-button" type="button" disabled={busy} onClick={resetArea}>
-                <ArrowCounterClockwiseIcon className={busy ? "spinning" : ""} /> Reset
-              </button>
-            </div>
-          </form>
+          <button className="reset-area-button" type="button" disabled={busy} onClick={resetArea}>
+            <ArrowCounterClockwiseIcon className={busy ? "spinning" : ""} /> Reset
+          </button>
         </header>
 
         {new URLSearchParams(window.location.search).get("handoff") === "response-plan" && <div className="handoff-banner">

@@ -45,9 +45,6 @@ a { color: inherit; }
 .operation-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; max-width: 1460px; margin: 0 auto 22px; }
 .eyebrow, .answer-label { margin: 0 0 5px; color: var(--muted); font-size: .66rem; font-weight: 800; text-transform: uppercase; }
 .deck { margin: 6px 0 0; color: var(--muted); font-size: .86rem; }
-.area-control { width: min(390px,40%); }
-.area-control > div { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 7px; }
-.area-control input { height: 42px; }
 .icon-button { display: inline-grid; width: 36px; height: 36px; place-items: center; border: 1px solid #c9d1cd; border-radius: 6px; background: #fff; color: #3e4a45; padding: 0; }
 .icon-button:hover:not(:disabled) { border-color: #7d8a84; background: var(--surface-soft); color: var(--ink); }
 .icon-button svg { width: 17px; height: 17px; }
@@ -334,7 +331,7 @@ a { color: inherit; }
   .primary-nav a span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
   .dashboard-main { padding: 20px 12px 34px; }
   .operation-header { display: grid; gap: 15px; }
-  .area-control { width: 100%; }
+  .reset-area-button { justify-self: start; }
   .map-caption { display: none; }
   .intelligence-panel { display: block; }
   .intel-section + .intel-section { border-top: 1px solid var(--line); border-left: 0; }
