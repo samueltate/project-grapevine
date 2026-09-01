@@ -1,4 +1,5 @@
 import {
+  ArrowCounterClockwiseIcon,
   ArrowRightIcon,
   BuildingsIcon,
   CheckCircleIcon,
@@ -8,10 +9,9 @@ import {
   MapPinIcon,
   PackageIcon,
   ShieldCheckIcon,
-  WarningIcon,
   WaveformIcon
 } from "@phosphor-icons/react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { responseNeeds, type ResponseNeed, type ResponsePartner } from "./responseSchemas";
 import { useResponse } from "./useResponse";
 import { useResponseWebMCPTools } from "./useResponseWebMCPTools";
@@ -70,7 +70,7 @@ export default function ResponseApp() {
 
   const bundle = response.bundle;
   const currentShortlist = bundle?.shortlists[0] ?? null;
-  const currentRequest = bundle?.requests[0] ?? null;
+  const currentRequest = bundle?.requests.find((request) => request.shortlist_id === currentShortlist?.id) ?? null;
   const fieldVerification = bundle?.field_verification ?? null;
   const evidenceReady = currentShortlist?.need === "debris_clearance"
     ? ["blocked", "caution"].includes(fieldVerification?.answer_value ?? "")
@@ -78,20 +78,30 @@ export default function ResponseApp() {
   const visiblePartners = matches.length ? matches : bundle?.partners ?? [];
   const selectedPartners = useMemo(() => visiblePartners.filter((partner) => selectedIds.includes(partner.id)), [visiblePartners, selectedIds]);
 
-  useEffect(() => {
-    if (!bundle || selectedIds.length) return;
-    setSelectedIds(bundle.partners.filter((partner) => partner.capabilities.includes("debris_clearance") && partner.response_status === "active").slice(0, 1).map((partner) => partner.id));
-  }, [bundle, selectedIds.length]);
-
   async function find() {
     setBusy(true);
     response.setError(null);
     try {
       const result = await response.actions.findPartners(need, area, localOnly);
       setMatches(result.partners);
-      setSelectedIds(result.partners.slice(0, 2).map((partner) => partner.id));
+      setSelectedIds([]);
     } catch (caught) {
       response.setError(caught instanceof Error ? caught.message : "Partner search failed.");
+    } finally { setBusy(false); }
+  }
+
+  async function resetWorkRequest() {
+    setBusy(true);
+    response.setError(null);
+    try {
+      await response.actions.resetWorkRequest();
+      setNeed("debris_clearance");
+      setArea("Watauga Relief Corridor");
+      setLocalOnly(false);
+      setMatches([]);
+      setSelectedIds([]);
+    } catch (caught) {
+      response.setError(caught instanceof Error ? caught.message : "Work request could not be reset.");
     } finally { setBusy(false); }
   }
 
@@ -132,12 +142,6 @@ export default function ResponseApp() {
       </header>
       {response.error && <p className="error" role="alert">{response.error}</p>}
 
-      <section className="incident-strip">
-        <div><span className="incident-icon"><WarningIcon weight="fill" /></span><span><small>Active coordination scenario</small><strong>{bundle.incident.name}</strong></span></div>
-        <p>{bundle.incident.operational_need}</p>
-        <span className="incident-uncertainty"><CheckCircleIcon weight="fill" /> Obstruction verified near Shelter B</span>
-      </section>
-
       <section className="response-layout">
         <div className="directory-panel">
           <div className="response-section-heading"><div><p className="eyebrow">Structured directory</p><h2>Find response partners</h2></div><span>{visiblePartners.length} available</span></div>
@@ -154,21 +158,18 @@ export default function ResponseApp() {
         </div>
 
         <aside className="response-plan-panel">
-          <div className="response-section-heading"><div><p className="eyebrow">Agent workspace</p><h2>Response plan</h2></div></div>
-          <section className="plan-step complete">
-            <span>1</span><div><small>Incident brief</small><strong>Need and area identified</strong><p>{bundle.incident.published_status}</p></div>
+          <div className="response-section-heading"><div><p className="eyebrow">Agent workspace</p><h2>Work request</h2></div><button className="reset-request-button" type="button" disabled={busy} onClick={() => void resetWorkRequest()}><ArrowCounterClockwiseIcon /> Reset</button></div>
+          <section className={`plan-step ${fieldVerification ? "complete" : "warning"}`}>
+            <span>1</span><div><small>Verified issue</small><strong>{fieldVerification ? `Route reported ${fieldVerification.answer_value}` : "Field verification needed"}</strong><p>{fieldVerification ? `${fieldVerification.source_name}: ${fieldVerification.answer_note || "Structured field report received."}` : bundle.incident.uncertainty}</p><a href="/?handoff=work-request"><MapPinIcon weight="fill" /> {fieldVerification ? "Review field report" : "Open field verification"} <ArrowRightIcon /></a></div>
           </section>
           <section className={`plan-step ${currentShortlist ? "complete" : ""}`}>
             <span>2</span><div><small>Partner match</small><strong>{currentShortlist?.title ?? "Shortlist not saved"}</strong>{currentShortlist && <p>{currentShortlist.partners?.map((partner) => partner.name).join(" + ")}</p>}</div>
           </section>
           <section className={`plan-step ${currentRequest ? "warning" : ""}`}>
-            <span>3</span><div><small>Coordination request</small><strong>{currentRequest ? "Prepared for approval" : "Not prepared"}</strong>{currentShortlist && !currentRequest && <button type="button" disabled={busy} onClick={() => void prepare()}><PackageIcon /> Prepare request</button>}{currentRequest && <p>{currentRequest.available_resources}</p>}</div>
-          </section>
-          <section className={`plan-step verification ${fieldVerification ? (evidenceReady ? "complete" : "warning") : currentRequest ? "active" : ""}`}>
-            <span>4</span><div><small>Live ground truth</small><strong>{fieldVerification ? `Route reported ${fieldVerification.answer_value}` : "Verify before dispatch"}</strong><p>{fieldVerification ? `${fieldVerification.source_name}: ${fieldVerification.answer_note || "Structured field report received."}` : bundle.incident.uncertainty}</p><a href="/?handoff=response-plan"><MapPinIcon weight="fill" /> {fieldVerification ? "Review field verification" : "Open field verification"} <ArrowRightIcon /></a></div>
+            <span>3</span><div><small>Work request</small><strong>{currentRequest ? "Prepared for approval" : "Not prepared"}</strong>{currentShortlist && !currentRequest && <button type="button" disabled={busy} onClick={() => void prepare()}><PackageIcon /> Prepare work request</button>}{currentRequest && <p>{currentRequest.available_resources}</p>}</div>
           </section>
           {currentRequest?.status === "pending_approval" && <div className="coordination-approval"><ShieldCheckIcon weight="fill" /><div><strong>{evidenceReady ? "Coordinator approval required" : "Crew approval locked"}</strong><p>{evidenceReady ? "The obstruction is verified. No partner is contacted until you approve." : "A current obstruction report is required before crew approval."}</p></div><button type="button" disabled={!evidenceReady} onClick={() => void response.actions.approveCoordination(currentRequest.id)}>Approve plan</button></div>}
-          {currentRequest?.status === "approved" && <div className="coordination-approved"><CheckCircleIcon weight="fill" /> Plan approved. Crew contact and dispatch remain coordinator decisions.</div>}
+          {currentRequest?.status === "approved" && <div className="coordination-approved"><CheckCircleIcon weight="fill" /> Work request approved. Crew contact and dispatch remain coordinator decisions.</div>}
         </aside>
       </section>
 

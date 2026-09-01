@@ -429,7 +429,7 @@ function Board() {
         {new URLSearchParams(window.location.search).get("handoff") === "response-plan" && <div className="handoff-banner">
           <CheckCircleIcon weight="fill" />
           <span><strong>Response partners selected.</strong> Confirm the Watauga corridor before approving dispatch.</span>
-          <a href="/response">View response plan</a>
+          <a href="/response">View work request</a>
         </div>}
 
         {grapevine.error && <p className="error" role="alert">{grapevine.error}</p>}

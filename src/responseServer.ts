@@ -131,10 +131,14 @@ export function routeEvidenceReady(need: ResponseNeed, verification: Pick<DbFiel
 }
 
 async function getBundle(env: Env) {
+  const workspace = await env.DB.prepare(
+    "SELECT reset_at FROM response_workspace_state WHERE id = 'active'"
+  ).first<{ reset_at: string }>();
+  const resetAt = workspace?.reset_at ?? "1970-01-01T00:00:00.000Z";
   const [partners, shortlists, requests, fieldVerification, inventory, drafts] = await Promise.all([
     env.DB.prepare("SELECT * FROM response_partners ORDER BY local_led DESC, response_status, name").all<DbPartner>(),
-    env.DB.prepare("SELECT * FROM response_shortlists ORDER BY created_at DESC LIMIT 6").all<DbShortlist>(),
-    env.DB.prepare("SELECT * FROM response_coordination_requests ORDER BY created_at DESC LIMIT 6").all<DbCoordinationRequest>(),
+    env.DB.prepare("SELECT * FROM response_shortlists WHERE created_at > ? ORDER BY created_at DESC LIMIT 6").bind(resetAt).all<DbShortlist>(),
+    env.DB.prepare("SELECT * FROM response_coordination_requests WHERE created_at > ? ORDER BY created_at DESC LIMIT 6").bind(resetAt).all<DbCoordinationRequest>(),
     latestRouteVerification(env),
     env.DB.prepare("SELECT * FROM response_inventory ORDER BY CASE status WHEN 'shortage' THEN 0 WHEN 'adequate' THEN 1 ELSE 2 END, item_name").all<DbInventory>(),
     env.DB.prepare("SELECT * FROM response_public_drafts ORDER BY created_at DESC LIMIT 6").all<DbDraft>()
@@ -154,6 +158,15 @@ async function getBundle(env: Env) {
     inventory: inventory.results.map((item) => ({ ...item, updated_at: isoTimestamp(item.updated_at) })),
     public_drafts: drafts.results.map((item) => ({ ...item, created_at: isoTimestamp(item.created_at) }))
   };
+}
+
+async function resetWorkRequest(env: Env) {
+  const resetAt = now();
+  await env.DB.prepare(`INSERT INTO response_workspace_state (id, reset_at)
+    VALUES ('active', ?)
+    ON CONFLICT(id) DO UPDATE SET reset_at = excluded.reset_at`)
+    .bind(resetAt).run();
+  return json({ reset: true, workspace: await getBundle(env) });
 }
 
 async function findPartners(request: Request, env: Env) {
@@ -226,8 +239,8 @@ async function prepareCoordination(request: Request, env: Env) {
     approval_required: true,
     external_contact_made: false,
     recommended_next_step: evidenceReady ? {
-      action: "review_coordinator_approval",
-      reason: "Current route evidence confirms the obstruction. Review and approve the prepared plan before crew dispatch."
+      action: "review_work_request_approval",
+      reason: "Current route evidence confirms the obstruction. Review and approve the prepared work request before crew dispatch."
     } : {
       reason: "The selected partners depend on the Watauga Relief Corridor, whose published status may be stale.",
       page: "/",
@@ -252,7 +265,7 @@ async function approveCoordination(env: Env, requestId: string) {
   await env.DB.prepare("UPDATE response_coordination_requests SET status = 'approved', approved_at = ? WHERE id = ? AND status = 'pending_approval'")
     .bind(timestamp, requestId).run();
   const item = await env.DB.prepare("SELECT * FROM response_coordination_requests WHERE id = ?").bind(requestId).first<DbCoordinationRequest>();
-  return item ? json({ request: presentRequest(item), external_contact_made: false, result: "Coordination plan approved. Crew contact and dispatch remain separate coordinator actions." }) : json({ error: "Coordination request was not found." }, 404);
+  return item ? json({ request: presentRequest(item), external_contact_made: false, result: "Work request approved. Crew contact and dispatch remain separate coordinator actions." }) : json({ error: "Work request was not found." }, 404);
 }
 
 async function getInventory(request: Request, env: Env) {
@@ -293,6 +306,7 @@ export async function handleResponseRequest(request: Request, env: Env) {
   }
   if (request.method === "POST" && path === "/api/response/shortlists") return createShortlist(request, env);
   if (request.method === "POST" && path === "/api/response/requests") return prepareCoordination(request, env);
+  if (request.method === "POST" && path === "/api/response/work-request/reset") return resetWorkRequest(env);
   if (request.method === "POST" && path === "/api/response/inventory") return getInventory(request, env);
   if (request.method === "POST" && path === "/api/response/appeals") return draftAppeal(request, env);
   const approvalMatch = path.match(/^\/api\/response\/requests\/([^/]+)\/approve$/);

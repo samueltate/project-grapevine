@@ -13,7 +13,7 @@ const responseActionCatalog = [
   { tool: "find_response_partners", description: "Find relief partners by area, capability, and local leadership." },
   { tool: "get_partner_details", description: "Inspect a partner's capabilities, evidence, contact channel, and route dependency." },
   { tool: "create_response_shortlist", description: "Save a transparent partner shortlist without contacting or endorsing an organization." },
-  { tool: "prepare_coordination_request", description: "Stage a crew coordination request for human approval." }
+  { tool: "prepare_work_request", description: "Stage a crew work request for human approval." }
 ] as const;
 
 export function useResponseWebMCPTools(actions: ResponseActions): ResponseWebMCPState {
@@ -70,8 +70,8 @@ export function useResponseWebMCPTools(actions: ResponseActions): ResponseWebMCP
       }
     },
     {
-      name: "prepare_coordination_request",
-      description: "Stage a partner coordination request for human approval. If route evidence is uncertain, the result directs the coordinator to live field verification in Demo 1.",
+      name: "prepare_work_request",
+      description: "Stage a partner work request for human approval. If route evidence is uncertain, the result directs the coordinator to live field verification in Demo 1.",
       inputSchema: responseToolSchemas.coordination,
       annotations: controlled,
       async execute(args) {

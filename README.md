@@ -8,7 +8,7 @@ anything is dispatched. It contains two demonstration workspaces:
 - Live Ground Truth: an agent coordinates with field responders and
   infrastructure sensors around a western North Carolina relief corridor.
 - Resource Coordination: an internal relief coordinator uses a structured
-  partner directory to turn an operational need into a reviewable response plan.
+  partner directory to turn an operational need into a reviewable work request.
 
 The demo uses a Hurricane Helene response scenario inspired by the
 aid-distribution and access challenges experienced across western North
@@ -41,7 +41,7 @@ not autonomous dispatch:
 | Workspace | Agent contribution | Human responsibility |
 | --- | --- | --- |
 | Live Ground Truth | Finds people, sensors, and a drone; compares evidence; and stages questions or drone missions | Authorizes requests and missions, then supplies field observations |
-| Resource Coordination | Matches a verified obstruction to an appropriate debris crew and prepares a response plan | Reviews uncertainty and approves the plan |
+| Resource Coordination | Matches a verified obstruction to an appropriate debris crew and prepares a work request | Reviews uncertainty and approves the request |
 | Warehouse | Reads supply inventory and drafts a shortage appeal | Reviews inventory priorities and decides whether a draft is published |
 
 This project was created during The WebMCP Challenge submission period. Its
@@ -115,14 +115,14 @@ This optional version uses a phone or second browser window.
 This demonstrates the same WebMCP contract coordinating with a live human
 instead of a deterministic sensor.
 
-### Scenario 2: Turn a Resource Directory into a Response Plan
+### Scenario 2: Turn a Resource Directory into a Work Request
 
 Open <https://project-grapevine.preflyhq.com/response> and send:
 
 > Use only the WebMCP tools provided by this page. Read the crisis brief. We
 > Miles and the recon drone confirm a fallen tree blocking the shelter route.
 > Find an active, locally led debris-clearance partner serving the Watauga Relief
-> Corridor, inspect its evidence, save a transparent shortlist, and prepare a crew coordination request.
+> Corridor, inspect its evidence, save a transparent shortlist, and prepare a crew work request.
 > Do not claim that anyone has been contacted or that dispatch is approved.
 > Tell me what remains uncertain.
 
@@ -131,8 +131,8 @@ Expected flow:
 1. ChatGPT calls `get_crisis_brief`, `find_response_partners`, and
    `get_partner_details`.
 2. ChatGPT calls `create_response_shortlist` and
-   `prepare_coordination_request`.
-3. The response plan shows the selected partners, but dispatch remains locked
+   `prepare_work_request`.
+3. The work request shows the selected partners, but dispatch remains locked
    until a current obstruction report is available.
 
 To test the cross-demo handoff, continue with:
@@ -199,10 +199,10 @@ The Resource Coordination workspace at `/response` registers six separate tools:
 - `find_response_partners`
 - `get_partner_details`
 - `create_response_shortlist`
-- `prepare_coordination_request`
+- `prepare_work_request`
 
 The first three workflow tools read structured directory evidence. The final
-two save a transparent shortlist and stage a coordination request. No external
+two save a transparent shortlist and stage a work request. No external
 partner is contacted. If route evidence is uncertain, the result directs the
 coordinator to Demo 1 for live field verification before dispatch.
 

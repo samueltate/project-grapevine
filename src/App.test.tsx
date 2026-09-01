@@ -175,6 +175,7 @@ function installResponseFetch() {
     if (url === "/api/response/partners/partner-high-country") return Response.json(responsePartner);
     if (url === "/api/response/shortlists") return Response.json({ shortlist: { id: "shortlist-1", ...body, created_at: new Date().toISOString(), partners: [responsePartner] } });
     if (url === "/api/response/requests") return Response.json({ request: { id: "coord-1", ...body, status: "pending_approval", field_verification_required: true, uncertainty: responseBundle.incident.uncertainty, created_at: new Date().toISOString(), approved_at: null }, approval_required: true, recommended_next_step: { page: "/", tool: "find_available_sources" } });
+    if (url === "/api/response/work-request/reset") return Response.json({ reset: true, workspace: responseBundle });
     if (url === "/api/response/inventory") return Response.json({ inventory: responseBundle.inventory });
     if (url === "/api/response/appeals") return Response.json({ draft: { id: "draft-1", item_id: body.item_id, channel: "social", copy: "Draft appeal", donation_url: responseBundle.inventory[0].donation_url, status: "draft", created_at: new Date().toISOString() } });
     return Response.json(responseBundle);
@@ -330,10 +331,15 @@ describe("Grapevine resource coordination", () => {
       "get_crisis_brief",
       "get_partner_details",
       "list_available_actions",
-      "prepare_coordination_request"
+      "prepare_work_request"
     ]);
+    expect(screen.getByRole("heading", { name: "Work request" })).toBeInTheDocument();
+    expect(screen.queryByText("Active coordination scenario")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Supply gaps, not donation volume" })).not.toBeInTheDocument();
     expect(tools.has("find_available_sources")).toBe(false);
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith("/api/response/work-request/reset", expect.objectContaining({ method: "POST" })));
   });
 
   it("returns a field-verification handoff after staging coordination", async () => {
@@ -343,7 +349,7 @@ describe("Grapevine resource coordination", () => {
     render(<App />);
     await waitFor(() => expect(tools.size).toBe(6));
 
-    const result = await tools.get("prepare_coordination_request")!.execute({
+    const result = await tools.get("prepare_work_request")!.execute({
       shortlist_id: "shortlist-1",
       objective: "Move water to Mountain Shelter B.",
       available_resources: "Two truckloads of bottled water."

@@ -7,7 +7,7 @@ async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers: { "content-type": "application/json", ...options.headers }
   });
   const data = await response.json() as T & { error?: string };
-  if (!response.ok) throw new Error(data.error || "Response coordination request failed.");
+  if (!response.ok) throw new Error(data.error || "Resource request failed.");
   return data;
 }
 
@@ -19,6 +19,7 @@ export type ResponseActions = {
   createShortlist: (input: { title: string; need: ResponseNeed; area: string; partner_ids: string[]; rationale: string }) => Promise<ResponseShortlist>;
   prepareCoordination: (input: { shortlist_id: string; objective: string; available_resources: string }) => Promise<{ request: CoordinationRequest; approval_required: true; recommended_next_step: Record<string, string> }>;
   approveCoordination: (requestId: string) => Promise<CoordinationRequest>;
+  resetWorkRequest: () => Promise<ResponseBundle>;
   getSupplyInventory: (status?: SupplyInventoryItem["status"]) => Promise<{ inventory: SupplyInventoryItem[] }>;
   draftSupplyAppeal: (itemId: string) => Promise<PublicAppealDraft>;
 };
@@ -57,6 +58,11 @@ export function useResponse() {
     await refresh();
     return result.request;
   }, [refresh]);
+  const resetWorkRequest = useCallback(async () => {
+    const result = await api<{ reset: true; workspace: ResponseBundle }>("/api/response/work-request/reset", { method: "POST" });
+    setBundle(result.workspace);
+    return result.workspace;
+  }, []);
   const getSupplyInventory = useCallback((status?: SupplyInventoryItem["status"]) => api<{ inventory: SupplyInventoryItem[] }>("/api/response/inventory", { method: "POST", body: JSON.stringify({ status }) }), []);
   const draftSupplyAppeal = useCallback(async (itemId: string) => {
     const result = await api<{ draft: PublicAppealDraft }>("/api/response/appeals", { method: "POST", body: JSON.stringify({ item_id: itemId }) });
@@ -65,8 +71,8 @@ export function useResponse() {
   }, [refresh]);
 
   const actions = useMemo<ResponseActions>(() => ({
-    refresh, getIncidentBrief, findPartners, getPartnerDetails, createShortlist, prepareCoordination, approveCoordination, getSupplyInventory, draftSupplyAppeal
-  }), [refresh, getIncidentBrief, findPartners, getPartnerDetails, createShortlist, prepareCoordination, approveCoordination, getSupplyInventory, draftSupplyAppeal]);
+    refresh, getIncidentBrief, findPartners, getPartnerDetails, createShortlist, prepareCoordination, approveCoordination, resetWorkRequest, getSupplyInventory, draftSupplyAppeal
+  }), [refresh, getIncidentBrief, findPartners, getPartnerDetails, createShortlist, prepareCoordination, approveCoordination, resetWorkRequest, getSupplyInventory, draftSupplyAppeal]);
 
   return { bundle, error, setError, actions };
 }
