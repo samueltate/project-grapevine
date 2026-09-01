@@ -42,13 +42,6 @@ const defaultQuestions: Record<RequestType, string> = {
   custom: "What conditions should the operations team know about right now?"
 };
 
-function minutesAgo(value: string) {
-  const timestamp = new Date(value).getTime();
-  if (!Number.isFinite(timestamp)) return "recently";
-  const minutes = Math.max(1, Math.round((Date.now() - timestamp) / 60000));
-  return `${minutes} min ago`;
-}
-
 function statusView(state: WebMCPToolsState) {
   if (state.error) return "Demo helpers could not connect";
   if (state.registered) return `${state.count} ways to check the route`;
@@ -192,7 +185,7 @@ function SourceRoster({
     <div className="source-roster">
       <div className="roster-head" aria-hidden="true">
         <span>Source</span><span>Verification</span><span>Signals</span>
-        <span>Updated</span><span>Availability</span><span>Actions</span>
+        <span>Availability</span><span>Actions</span>
       </div>
       {sources.length > 0 ? sources.map((source) => (
         <div
@@ -211,10 +204,6 @@ function SourceRoster({
           <div className="signal-list" data-label="Signals">
             {source.offered.slice(0, 2).map((item) => <span key={item}>{requestLabel(item)}</span>)}
             {source.offered.length > 2 && <span>+{source.offered.length - 2}</span>}
-          </div>
-          <div className="roster-meta" data-label="Updated">
-            <strong>{minutesAgo(source.last_active)}</strong>
-            <small>{source.distance_m ? `${source.distance_m} m away` : "on corridor"}</small>
           </div>
           <div className="quality" data-label="Availability">
             <strong>{source.source_profile === "drone" ? `${source.battery_percent}% battery` : source.availability_label}</strong><span>{source.mission_status || source.channel_label}</span>
