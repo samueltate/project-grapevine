@@ -1,5 +1,6 @@
 import {
   BuildingsIcon,
+  CaretDownIcon,
   CheckCircleIcon,
   FacebookLogoIcon,
   HouseIcon,
@@ -9,7 +10,7 @@ import {
   ShieldCheckIcon,
   WaveformIcon
 } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useResponse } from "./useResponse";
 import { useWarehouseWebMCPTools } from "./useWarehouseWebMCPTools";
 
@@ -40,12 +41,28 @@ export default function WarehouseApp() {
   const tools = useWarehouseWebMCPTools(response.actions);
   const [publishConfirm, setPublishConfirm] = useState(false);
   const [publishApproved, setPublishApproved] = useState(false);
+  const [outreachOpen, setOutreachOpen] = useState(false);
+  const seenDraftId = useRef<string | null | undefined>(undefined);
   const bundle = response.bundle;
+  const latestDraft = bundle?.public_drafts[0] ?? null;
+
+  useEffect(() => {
+    if (!bundle) return;
+    if (seenDraftId.current === undefined) {
+      seenDraftId.current = latestDraft?.id ?? null;
+      return;
+    }
+    if (latestDraft && latestDraft.id !== seenDraftId.current) {
+      setOutreachOpen(true);
+    }
+    seenDraftId.current = latestDraft?.id ?? null;
+  }, [bundle, latestDraft]);
 
   async function draftAppeal(itemId: string) {
     setPublishConfirm(false);
     setPublishApproved(false);
     await response.actions.draftSupplyAppeal(itemId);
+    setOutreachOpen(true);
   }
 
   if (!bundle) return <div className="dashboard-shell"><Sidebar toolCount={tools.count} /><main className="dashboard-main"><p>Loading warehouse...</p></main></div>;
@@ -69,12 +86,28 @@ export default function WarehouseApp() {
             {item.status === "shortage" && <button type="button" onClick={() => void draftAppeal(item.id)}><MegaphoneIcon /> Draft appeal</button>}
           </article>)}
         </div>
-        {bundle.public_drafts[0] && <article className="appeal-draft">
+      </section>
+
+      <section className={`outreach-panel ${outreachOpen ? "open" : ""}`}>
+        <div className="outreach-header">
+          <span className="outreach-mark"><MegaphoneIcon weight="fill" /></span>
+          <span className="outreach-copy">
+            <small>Communications tool</small>
+            <strong>Supply outreach</strong>
+            <span>Turn a verified shortage into a reviewable public request.</span>
+          </span>
+          <span className="outreach-state">{latestDraft ? "Draft ready" : "No draft"}</span>
+          <button type="button" aria-expanded={outreachOpen} aria-label={`${outreachOpen ? "Close" : "Open"} supply outreach`} onClick={() => setOutreachOpen((current) => !current)}>
+            <CaretDownIcon />
+          </button>
+        </div>
+        {outreachOpen && <div className="outreach-body">
+          {latestDraft ? <article className="appeal-draft">
           <header>
             <div><span>{publishApproved ? "Approved for publishing" : "Ready for review"}</span><h3>Public supply appeal</h3></div>
             <strong className="appeal-channel"><FacebookLogoIcon weight="fill" /> Facebook</strong>
           </header>
-          <p>{bundle.public_drafts[0].copy}</p>
+          <p>{latestDraft.copy}</p>
           <footer>
             {!publishConfirm && !publishApproved && <button type="button" onClick={() => setPublishConfirm(true)}><FacebookLogoIcon weight="fill" /> Publish to Facebook</button>}
             {publishConfirm && !publishApproved && <div className="publish-confirmation">
@@ -84,7 +117,8 @@ export default function WarehouseApp() {
             </div>}
             {publishApproved && <div className="publish-approved"><CheckCircleIcon weight="fill" /><span><strong>Facebook post approved</strong><small>Ready for the communications team.</small></span></div>}
           </footer>
-        </article>}
+          </article> : <p className="outreach-empty">Choose a shortage above to draft a public supply request.</p>}
+        </div>}
       </section>
     </main>
   </div>;

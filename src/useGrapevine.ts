@@ -84,10 +84,14 @@ export function useGrapevine() {
   const refresh = useCallback(async () => {
     const next = await api<AppState>("/api/state");
     commit(next);
+    const latestSession = next.sessions[0] ?? null;
     setActiveSession((current) => {
-      if (!current) return current;
-      return next.sessions.find((session) => session.id === current.id) ?? current;
+      if (!current) return latestSession;
+      return next.sessions.find((session) => session.id === current.id) ?? latestSession;
     });
+    if (latestSession?.source) {
+      setSelectedSource((current) => current ?? latestSession.source ?? null);
+    }
     return next;
   }, [commit]);
 
@@ -95,6 +99,24 @@ export function useGrapevine() {
     void refresh().catch((caught: unknown) =>
       setError(caught instanceof Error ? caught.message : "Could not load Grapevine.")
     );
+  }, [refresh]);
+
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState !== "hidden") {
+        void refresh().catch((caught: unknown) =>
+          setError(caught instanceof Error ? caught.message : "Could not refresh Grapevine.")
+        );
+      }
+    };
+    window.addEventListener("focus", refreshWhenVisible);
+    window.addEventListener("pageshow", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.removeEventListener("focus", refreshWhenVisible);
+      window.removeEventListener("pageshow", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
   }, [refresh]);
 
   const findAvailableSources = useCallback(

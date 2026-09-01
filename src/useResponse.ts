@@ -38,6 +38,24 @@ export function useResponse() {
     void refresh().catch((caught: unknown) => setError(caught instanceof Error ? caught.message : "Could not load response directory."));
   }, [refresh]);
 
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState !== "hidden") {
+        void refresh().catch((caught: unknown) =>
+          setError(caught instanceof Error ? caught.message : "Could not refresh response directory.")
+        );
+      }
+    };
+    window.addEventListener("focus", refreshWhenVisible);
+    window.addEventListener("pageshow", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.removeEventListener("focus", refreshWhenVisible);
+      window.removeEventListener("pageshow", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [refresh]);
+
   const getIncidentBrief = useCallback(() => api<ResponseBundle["incident"]>("/api/response/incident"), []);
   const findPartners = useCallback((need: ResponseNeed, area: string, local_led_only = false) => api<{ partners: ResponsePartner[]; matching_need: ResponseNeed; area: string }>("/api/response/partners/find", {
     method: "POST", body: JSON.stringify({ need, area, local_led_only })

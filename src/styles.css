@@ -165,7 +165,7 @@ a { color: inherit; }
 .inventory-panel { max-width: 1460px; margin: 16px auto 0; border: 1px solid var(--line); border-radius: 7px; background: #fff; overflow: hidden; }
 .warehouse-page-panel { margin-top: 0; }
 .inventory-panel > .response-section-heading { border-bottom: 1px solid var(--line); padding: 15px 17px; }
-.inventory-grid { display: grid; grid-template-columns: repeat(4,1fr); }
+.inventory-grid { display: grid; grid-template-columns: repeat(3,1fr); }
 .inventory-item { display: grid; align-content: start; gap: 9px; min-width: 0; padding: 16px; }
 .inventory-item + .inventory-item { border-left: 1px solid var(--line); }
 .inventory-item > div { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
@@ -174,7 +174,21 @@ a { color: inherit; }
 .inventory-item p { margin: 0; color: var(--muted); font-size: .65rem; line-height: 1.45; }
 .inventory-item small { color: #48534e; font-size: .62rem; font-weight: 700; }
 .inventory-item button svg { width: 15px; height: 15px; }
-.appeal-draft { display: grid; gap: 14px; margin: 16px; border: 1px solid #a9c8bc; border-left: 4px solid var(--accent); border-radius: 7px; background: #f6faf8; box-shadow: 0 5px 16px rgba(27,72,59,.08); padding: 18px; }
+.outreach-panel { max-width: 1460px; margin: 16px auto 0; border: 1px solid #abc4ba; border-radius: 7px; background: #eef6f2; overflow: hidden; }
+.outreach-header { display: grid; grid-template-columns: 42px minmax(0,1fr) auto 36px; align-items: center; gap: 12px; padding: 15px 17px; }
+.outreach-mark { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 6px; background: var(--accent); color: #fff; }
+.outreach-mark svg { width: 21px; height: 21px; }
+.outreach-copy { display: grid; gap: 2px; }
+.outreach-copy small { color: var(--accent); font-size: .56rem; font-weight: 800; text-transform: uppercase; }
+.outreach-copy strong { font-size: .82rem; }
+.outreach-copy > span { color: var(--muted); font-size: .63rem; }
+.outreach-state { border: 1px solid #b6ccc3; border-radius: 4px; background: #fff; color: #3e6558; font-size: .58rem; font-weight: 800; padding: 5px 7px; text-transform: uppercase; }
+.outreach-header > button { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid #abc0b7; border-radius: 5px; background: #fff; color: #355349; padding: 0; }
+.outreach-header > button svg { width: 17px; height: 17px; transition: transform .16s ease; }
+.outreach-panel.open .outreach-header > button svg { transform: rotate(180deg); }
+.outreach-body { border-top: 1px solid #c4d7cf; background: #fff; padding: 16px; }
+.outreach-empty { margin: 0; color: var(--muted); font-size: .68rem; }
+.appeal-draft { display: grid; gap: 14px; border: 1px solid #a9c8bc; border-left: 4px solid var(--accent); border-radius: 7px; background: #f6faf8; box-shadow: 0 5px 16px rgba(27,72,59,.08); padding: 18px; }
 .appeal-draft header { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
 .appeal-draft header > div { display: grid; gap: 4px; }
 .appeal-draft header span { color: var(--accent); font-size: .58rem; font-weight: 800; text-transform: uppercase; }

@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
+import type { ResponseBundle, ResponsePartner } from "./responseSchemas";
 
 type RegisteredTool = {
   name: string;
@@ -75,7 +76,7 @@ const session = {
   source
 };
 
-const responsePartner = {
+const responsePartner: ResponsePartner = {
   id: "partner-high-country",
   name: "High Country Community Response",
   organization_type: "local" as const,
@@ -91,7 +92,7 @@ const responsePartner = {
   updated_at: new Date().toISOString()
 };
 
-const responseBundle = {
+const responseBundle: ResponseBundle = {
   incident: {
     id: "helene-watauga-reference",
     name: "Watauga County Relief Coordination",
@@ -132,21 +133,27 @@ function installModelContext(synchronous = false) {
   return tools;
 }
 
-function installFetch() {
+function installFetch(stateSessions: Array<typeof session> = []) {
+  let currentSessions = [...stateSessions];
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const body = init?.body ? JSON.parse(String(init.body)) : {};
 
     if (url === "/api/state") {
-      return Response.json({ spots: [spot], sources: [source, machineSource], sessions: [] });
+      return Response.json({ spots: [spot], sources: [source, machineSource], sessions: currentSessions });
     }
     if (url === "/api/baseline") return Response.json(spot);
     if (url === "/api/sources/find") {
       return Response.json({ spot, sources: [source, machineSource], radius_m: body.radius_m });
     }
-    if (url === "/api/sessions") return Response.json({ session });
+    if (url === "/api/sessions") {
+      currentSessions = [session, ...currentSessions.filter((item) => item.id !== session.id)];
+      return Response.json({ session });
+    }
     if (url === "/api/sessions/ses-demo/approve") {
-      return Response.json({ session: { ...session, status: "sent" } });
+      const sentSession = { ...session, status: "sent" };
+      currentSessions = [sentSession, ...currentSessions.filter((item) => item.id !== session.id)];
+      return Response.json({ session: sentSession });
     }
     if (url === "/api/sessions/ses-demo/rate") {
       return Response.json({
@@ -165,20 +172,20 @@ function installFetch() {
   return fetchMock;
 }
 
-function installResponseFetch() {
+function installResponseFetch(bundle: ResponseBundle = responseBundle) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const body = init?.body ? JSON.parse(String(init.body)) : {};
-    if (url === "/api/response/state") return Response.json(responseBundle);
-    if (url === "/api/response/incident") return Response.json(responseBundle.incident);
+    if (url === "/api/response/state") return Response.json(bundle);
+    if (url === "/api/response/incident") return Response.json(bundle.incident);
     if (url === "/api/response/partners/find") return Response.json({ partners: [responsePartner], matching_need: body.need, area: body.area });
     if (url === "/api/response/partners/partner-high-country") return Response.json(responsePartner);
     if (url === "/api/response/shortlists") return Response.json({ shortlist: { id: "shortlist-1", ...body, created_at: new Date().toISOString(), partners: [responsePartner] } });
-    if (url === "/api/response/requests") return Response.json({ request: { id: "coord-1", ...body, status: "pending_approval", field_verification_required: true, uncertainty: responseBundle.incident.uncertainty, created_at: new Date().toISOString(), approved_at: null }, approval_required: true, recommended_next_step: { page: "/", tool: "find_available_sources" } });
-    if (url === "/api/response/work-request/reset") return Response.json({ reset: true, workspace: responseBundle });
-    if (url === "/api/response/inventory") return Response.json({ inventory: responseBundle.inventory });
-    if (url === "/api/response/appeals") return Response.json({ draft: { id: "draft-1", item_id: body.item_id, channel: "social", copy: "Draft appeal", donation_url: responseBundle.inventory[0].donation_url, status: "draft", created_at: new Date().toISOString() } });
-    return Response.json(responseBundle);
+    if (url === "/api/response/requests") return Response.json({ request: { id: "coord-1", ...body, status: "pending_approval", field_verification_required: true, uncertainty: bundle.incident.uncertainty, created_at: new Date().toISOString(), approved_at: null }, approval_required: true, recommended_next_step: { page: "/", tool: "find_available_sources" } });
+    if (url === "/api/response/work-request/reset") return Response.json({ reset: true, workspace: bundle });
+    if (url === "/api/response/inventory") return Response.json({ inventory: bundle.inventory });
+    if (url === "/api/response/appeals") return Response.json({ draft: { id: "draft-1", item_id: body.item_id, channel: "social", copy: "Draft appeal", donation_url: bundle.inventory[0].donation_url, status: "draft", created_at: new Date().toISOString() } });
+    return Response.json(bundle);
   });
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
@@ -227,6 +234,21 @@ describe("Grapevine board", () => {
 
     expect(await screen.findByText("pending approval")).toBeInTheDocument();
     expect(screen.getByText("Send question")).toBeInTheDocument();
+  });
+
+  it("restores the latest answered request after returning to Operations", async () => {
+    const answeredSession = {
+      ...session,
+      status: "answered",
+      answer_value: "blocked",
+      answer_note: "A fallen tree blocks both lanes.",
+      answered_at: new Date().toISOString()
+    };
+    installFetch([answeredSession]);
+    render(<App />);
+
+    expect((await screen.findAllByText("blocked")).length).toBeGreaterThan(0);
+    expect(screen.getByText("The newest report says the route is not safe. Send teams another way.")).toBeInTheDocument();
   });
 });
 
@@ -377,6 +399,25 @@ describe("Grapevine resource coordination", () => {
     }) as { recommended_next_step: { tool: string } };
     expect(result.recommended_next_step.tool).toBe("find_available_sources");
   });
+
+  it("keeps the work request aligned with the selected need", async () => {
+    Object.defineProperty(window, "location", { configurable: true, value: new URL("https://example.test/response") });
+    const fieldBundle: ResponseBundle = {
+      ...responseBundle,
+      shortlists: [
+        { id: "food-plan", title: "Old food response", need: "food", area: "Watauga Relief Corridor", partner_ids: [responsePartner.id], rationale: "Older run", created_at: new Date().toISOString(), partners: [responsePartner] },
+        { id: "debris-plan", title: "Shelter road clearance", need: "debris_clearance", area: "Watauga Relief Corridor", partner_ids: [responsePartner.id], rationale: "Current run", created_at: new Date().toISOString(), partners: [responsePartner] }
+      ],
+      requests: [{ id: "coord-debris", shortlist_id: "debris-plan", objective: "Clear the shelter road.", available_resources: "One saw crew.", status: "pending_approval", field_verification_required: false, uncertainty: "Obstruction confirmed.", created_at: new Date().toISOString(), approved_at: null }],
+      field_verification: { session_id: "answered-1", answer_value: "blocked", answer_note: "Tree across both lanes.", source_name: "Miles Carter", answered_at: new Date().toISOString() }
+    };
+    installResponseFetch(fieldBundle);
+    render(<App />);
+
+    expect(await screen.findByText("Shelter road clearance")).toBeInTheDocument();
+    expect(screen.queryByText("Old food response")).not.toBeInTheDocument();
+    expect(screen.getByText("Coordinator approval required")).toBeInTheDocument();
+  });
 });
 
 describe("Grapevine warehouse", () => {
@@ -395,6 +436,10 @@ describe("Grapevine warehouse", () => {
       "list_available_actions"
     ]);
     expect(tools.has("find_response_partners")).toBe(false);
+    expect(screen.getByRole("button", { name: "Open supply outreach" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Choose a shortage above to draft a public supply request.")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open supply outreach" }));
+    expect(screen.getByText("Choose a shortage above to draft a public supply request.")).toBeInTheDocument();
 
     const catalog = await tools.get("list_available_actions")!.execute({}) as { page: string; actions: unknown[] };
     expect(catalog.page).toBe("Warehouse");

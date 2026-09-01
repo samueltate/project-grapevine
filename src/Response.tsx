@@ -69,7 +69,7 @@ export default function ResponseApp() {
   const [busy, setBusy] = useState(false);
 
   const bundle = response.bundle;
-  const currentShortlist = bundle?.shortlists[0] ?? null;
+  const currentShortlist = bundle?.shortlists.find((shortlist) => shortlist.need === need) ?? null;
   const currentRequest = bundle?.requests.find((request) => request.shortlist_id === currentShortlist?.id) ?? null;
   const fieldVerification = bundle?.field_verification ?? null;
   const evidenceReady = currentShortlist?.need === "debris_clearance"
