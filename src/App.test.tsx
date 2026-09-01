@@ -67,12 +67,12 @@ const session = {
   request_type: "route_status",
   question: "Can aid vehicles safely reach Mountain Shelter B from Boone?",
   status: "pending_approval",
-  answer_value: null,
-  answer_note: null,
+  answer_value: null as string | null,
+  answer_note: null as string | null,
   photo_url: null,
   stars: null,
   created_at: new Date().toISOString(),
-  answered_at: null,
+  answered_at: null as string | null,
   source
 };
 

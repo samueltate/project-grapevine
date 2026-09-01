@@ -66,6 +66,7 @@ const id = (prefix: string) => `${prefix}_${crypto.randomUUID()}`;
 
 function isoTimestamp(value: string): string;
 function isoTimestamp(value: null): null;
+function isoTimestamp(value: string | null): string | null;
 function isoTimestamp(value: string | null): string | null {
   if (!value) return value;
   return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(value)
