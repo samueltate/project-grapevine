@@ -217,6 +217,7 @@ export function useGrapevine() {
   const getDroneStatus = useCallback(async (source_id: string) => {
     const result = await api<DroneStatus>(`/api/drones/${encodeURIComponent(source_id)}`);
     setDroneStatus(result);
+    setSelectedSource(result.source);
     return result;
   }, []);
 
