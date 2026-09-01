@@ -170,6 +170,7 @@ export type Source = {
   battery_percent: number | null;
   mission_status: string | null;
   image_url: string | null;
+  video_url: string | null;
   telemetry: Record<string, string | number>;
 };
 
@@ -182,7 +183,7 @@ export type DroneMission = {
 
 export type DroneStatus = {
   source: Source;
-  observation: { classification: string; image_url: string | null };
+  observation: { classification: string; image_url: string | null; video_url: string | null };
 };
 
 export type SessionStatus =

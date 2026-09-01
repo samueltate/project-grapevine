@@ -35,6 +35,7 @@ type DbSource = {
   battery_percent: number | null;
   mission_status: string | null;
   image_url: string | null;
+  video_url: string | null;
   telemetry: string;
 };
 
@@ -164,6 +165,7 @@ function presentSource(source: DbSource, distance_m = 0) {
     battery_percent: source.battery_percent,
     mission_status: source.mission_status,
     image_url: source.image_url,
+    video_url: source.video_url,
     telemetry
   };
 }
@@ -653,7 +655,8 @@ async function handleDroneStatus(env: Env, sourceId: string) {
   const telemetry = (() => { try { return JSON.parse(source.telemetry || "{}"); } catch { return {}; } })();
   return json({ source: presentSource(source), observation: {
     classification: telemetry.classification ?? "No current classification",
-    image_url: source.image_url
+    image_url: source.image_url,
+    video_url: source.video_url
   }});
 }
 

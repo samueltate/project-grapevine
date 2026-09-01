@@ -24,6 +24,7 @@ function source(id: string, handle: string, last_active: string) {
     battery_percent: null,
     mission_status: null,
     image_url: null,
+    video_url: null,
     telemetry: "{}"
   };
 }

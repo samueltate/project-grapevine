@@ -43,7 +43,7 @@ const source = {
   distance_m: 0,
   display_name: "Miles Carter", source_profile: "human" as const,
   channel_label: "Radio CH 3", availability_label: "Available",
-  battery_percent: null, mission_status: null, image_url: null, telemetry: {}
+  battery_percent: null, mission_status: null, image_url: null, video_url: null, telemetry: {}
 };
 
 const machineSource = {
