@@ -43,6 +43,7 @@ export type CheckInInput = {
 
 export type GrapevineActions = {
   refresh: () => Promise<AppState>;
+  resetWorkspace: () => Promise<AppState>;
   findAvailableSources: (near: string, radius_m?: number) => Promise<ApiFindSourcesResponse>;
   getWebBaseline: (spot: string) => Promise<Spot>;
   askSource: (
@@ -106,6 +107,16 @@ export function useGrapevine() {
       setError(caught instanceof Error ? caught.message : "Could not refresh Grapevine.")
     );
   }, [refresh]);
+
+  const resetWorkspace = useCallback(async () => {
+    const result = await api<{ reset: true; state: AppState }>("/api/reset", { method: "POST" });
+    commit(result.state);
+    setActiveSession(null);
+    setSelectedSource(null);
+    setDroneStatus(null);
+    setDroneMission(null);
+    return result.state;
+  }, [commit]);
 
   useEffect(() => {
     const refreshWhenVisible = () => {
@@ -258,6 +269,7 @@ export function useGrapevine() {
   const actions = useMemo<GrapevineActions>(
     () => ({
       refresh,
+      resetWorkspace,
       findAvailableSources,
       getWebBaseline,
       askSource,
@@ -273,6 +285,7 @@ export function useGrapevine() {
     }),
     [
       refresh,
+      resetWorkspace,
       findAvailableSources,
       getWebBaseline,
       askSource,

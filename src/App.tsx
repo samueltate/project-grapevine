@@ -343,8 +343,17 @@ function Board() {
     }
   }
 
-  function resetArea() {
-    void runDiscovery();
+  async function resetArea() {
+    setBusy(true);
+    grapevine.setError(null);
+    setComposerOpen(false);
+    try {
+      await grapevine.actions.resetWorkspace();
+      await runDiscovery();
+    } catch (caught) {
+      grapevine.setError(caught instanceof Error ? caught.message : "Reset failed.");
+      setBusy(false);
+    }
   }
 
   function selectSource(source: Source) {

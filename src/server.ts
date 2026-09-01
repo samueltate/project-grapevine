@@ -246,26 +246,46 @@ async function resolveSpot(db: D1Database, query: string) {
   return db.prepare("SELECT * FROM spots ORDER BY is_seeded DESC, name LIMIT 1").first<DbSpot>();
 }
 
-async function handleState(env: Env) {
+async function getOperationsResetAt(env: Env) {
+  const row = await env.DB.prepare(
+    "SELECT reset_at FROM operations_workspace_state WHERE id = 'active'"
+  ).first<{ reset_at: string }>();
+  return row?.reset_at ?? "1970-01-01T00:00:00.000Z";
+}
+
+async function getState(env: Env) {
+  const resetAt = await getOperationsResetAt(env);
   const [spots, sources, sessions] = await Promise.all([
     env.DB.prepare("SELECT * FROM spots ORDER BY is_seeded DESC, name").all<DbSpot>(),
     env.DB.prepare(
       "SELECT * FROM sources WHERE online = 1 ORDER BY checked_in_at DESC"
     ).all<DbSource>(),
     env.DB.prepare(
-      "SELECT * FROM sessions ORDER BY created_at DESC LIMIT 12"
-    ).all<DbSession>()
+      "SELECT * FROM sessions WHERE created_at > ? ORDER BY created_at DESC LIMIT 12"
+    ).bind(resetAt).all<DbSession>()
   ]);
   const visibleSources = collapseSourceIdentities(sources.results);
   const sourceById = new Map(sources.results.map((source) => [source.id, source]));
 
-  return json({
+  return {
     spots: spots.results.map(presentSpot),
     sources: visibleSources.map((source) => presentSource(source)),
     sessions: sessions.results.map((session) =>
       presentSession(session, sourceById.get(session.source_id))
     )
-  });
+  };
+}
+
+async function handleState(env: Env) {
+  return json(await getState(env));
+}
+
+async function handleOperationsReset(env: Env) {
+  await env.DB.prepare(`INSERT INTO operations_workspace_state (id, reset_at)
+    VALUES ('active', ?)
+    ON CONFLICT(id) DO UPDATE SET reset_at = excluded.reset_at`)
+    .bind(now()).run();
+  return json({ reset: true, state: await getState(env) });
 }
 
 async function handleFindSources(request: Request, env: Env) {
@@ -699,6 +719,7 @@ async function handleRequest(request: Request, env: Env) {
   if (!path.startsWith("/api/")) return notFound();
   if (path.startsWith("/api/response/")) return handleResponseRequest(request, env);
   if (request.method === "GET" && path === "/api/state") return handleState(env);
+  if (request.method === "POST" && path === "/api/reset") return handleOperationsReset(env);
   if (request.method === "POST" && path === "/api/sources/find") {
     return handleFindSources(request, env);
   }
