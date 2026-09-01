@@ -81,7 +81,13 @@ Expected flow:
 1. ChatGPT calls `get_web_baseline` and `find_available_sources`.
 2. ChatGPT calls `prepare_source_request` for Miles and asks whether it should send the exact question.
 3. Reply **Yes**. ChatGPT calls `send_source_request`; the dashboard also retains a manual **Send question** fallback.
-4. After Miles answers, send this follow-up:
+4. Miles is a human source, not a sensor, so nothing answers the question
+   automatically. In a separate browser tab or a second device, open
+   <https://project-grapevine.preflyhq.com/drive>, use the seeded name
+   `Miles Carter` and call sign `miles828`, select **Go online**, and submit a
+   structured answer to the question that appears there. Only after you do
+   this will ChatGPT have a response to retrieve.
+5. After Miles answers, send this follow-up:
 
 > Retrieve the structured response. Then inspect Watauga Recon 1 and prepare a
 > repositioning mission to confirm the obstruction. Stop for approval.
