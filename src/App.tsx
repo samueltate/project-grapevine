@@ -1,5 +1,5 @@
 import {
-  ArrowClockwiseIcon,
+  ArrowCounterClockwiseIcon,
   CheckCircleIcon,
   ClockIcon,
   CrosshairIcon,
@@ -10,6 +10,7 @@ import {
   MapPinIcon,
   NavigationArrowIcon,
   PackageIcon,
+  PaperPlaneTiltIcon,
   RadioIcon,
   RadioButtonIcon,
   UsersThreeIcon,
@@ -339,20 +340,26 @@ function Board() {
     );
   }, [selectedSource]);
 
-  async function runDiscovery(event?: FormEvent) {
+  async function runDiscovery(event?: FormEvent, area = near) {
     event?.preventDefault();
     setBusy(true);
     grapevine.setError(null);
     try {
       await Promise.all([
-        grapevine.actions.getWebBaseline(near),
-        grapevine.actions.findAvailableSources(near, 5000)
+        grapevine.actions.getWebBaseline(area),
+        grapevine.actions.findAvailableSources(area, 5000)
       ]);
     } catch (caught) {
       grapevine.setError(caught instanceof Error ? caught.message : "Discovery failed.");
     } finally {
       setBusy(false);
     }
+  }
+
+  function resetArea() {
+    const area = "Watauga Relief Corridor";
+    setNear(area);
+    void runDiscovery(undefined, area);
   }
 
   function selectSource(source: Source) {
@@ -419,8 +426,8 @@ function Board() {
             <label htmlFor="near">Operational area</label>
             <div>
               <input id="near" value={near} onChange={(event) => setNear(event.target.value)} />
-              <button className="icon-button refresh-button" type="submit" disabled={busy} title="Refresh reports" aria-label="Refresh current reports">
-                <ArrowClockwiseIcon className={busy ? "spinning" : ""} />
+              <button className="reset-area-button" type="button" disabled={busy} onClick={resetArea}>
+                <ArrowCounterClockwiseIcon className={busy ? "spinning" : ""} /> Reset
               </button>
             </div>
           </form>
@@ -557,6 +564,8 @@ function Driver() {
   );
   const [sessions, setSessions] = useState<Session[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
+  const [sendingId, setSendingId] = useState<string | null>(null);
   const [message, setMessage] = useState("Go online to receive field requests.");
   const seededSpot = useMemo(
     () => grapevine.state.spots.find((spot) => spot.is_seeded) ?? grapevine.state.spots[0],
@@ -604,10 +613,22 @@ function Driver() {
   }
 
   async function answer(session: Session, answerValue: string) {
-    await grapevine.actions.submitAnswer(session.id, answerValue, notes[session.id] ?? "");
-    setMessage("Field report submitted.");
-    setNotes((current) => ({ ...current, [session.id]: "" }));
-    await refreshDriver();
+    setSendingId(session.id);
+    try {
+      await grapevine.actions.submitAnswer(session.id, answerValue, notes[session.id] ?? "");
+      setMessage("Field report submitted.");
+      setNotes((current) => ({ ...current, [session.id]: "" }));
+      setSelectedAnswers((current) => {
+        const next = { ...current };
+        delete next[session.id];
+        return next;
+      });
+      await refreshDriver();
+    } catch (caught) {
+      setMessage(caught instanceof Error ? caught.message : "Field report could not be sent.");
+    } finally {
+      setSendingId(null);
+    }
   }
 
   useEffect(() => {
@@ -670,26 +691,38 @@ function Driver() {
                 <div className="driver-request" key={session.id}>
                   <span className="answer-label">{requestLabel(session.request_type)}</span>
                   <strong>{session.question}</strong>
-                  <textarea
-                    value={notes[session.id] ?? ""}
-                    onChange={(event) =>
-                      setNotes((current) => ({
-                        ...current,
-                        [session.id]: event.target.value
-                      }))
-                    }
-                    placeholder="Add an observation"
-                  />
-                  <div className="answer-chips">
-                    {answerOptions[session.request_type].map((option) => (
-                      <button
-                        key={option}
-                        type="button"
-                        onClick={() => void answer(session, option)}
-                      >
-                        {option}
+                  <label className="message-field">Message
+                    <textarea
+                      value={notes[session.id] ?? ""}
+                      onChange={(event) =>
+                        setNotes((current) => ({
+                          ...current,
+                          [session.id]: event.target.value
+                        }))
+                      }
+                      placeholder="Add an observation"
+                    />
+                  </label>
+                  <div className="quick-replies">
+                    <span className="quick-reply-label">Quick replies</span>
+                    <div className="quick-reply-row">
+                      <div className="answer-chips">
+                        {answerOptions[session.request_type].map((option) => (
+                          <button
+                            className={selectedAnswers[session.id] === option ? "selected" : ""}
+                            key={option}
+                            type="button"
+                            aria-pressed={selectedAnswers[session.id] === option}
+                            onClick={() => setSelectedAnswers((current) => ({ ...current, [session.id]: option }))}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                      <button className="send-reply-button" type="button" disabled={!selectedAnswers[session.id] || sendingId === session.id} onClick={() => void answer(session, selectedAnswers[session.id])}>
+                        <PaperPlaneTiltIcon weight="fill" /> Send
                       </button>
-                    ))}
+                    </div>
                   </div>
                 </div>
               ))}

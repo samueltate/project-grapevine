@@ -665,8 +665,8 @@ async function prepareDroneMission(request: Request, env: Env) {
     id: id("mission"), source_id: sourceId,
     target_name: typeof body.target_name === "string" ? body.target_name.trim() : "Mountain Shelter B",
     objective: typeof body.objective === "string" ? body.objective.trim() : "Capture updated aerial evidence.",
-    target_lat: typeof body.target_lat === "number" ? body.target_lat : 36.2193,
-    target_lng: typeof body.target_lng === "number" ? body.target_lng : -81.6804,
+    target_lat: typeof body.target_lat === "number" ? body.target_lat : 36.2208,
+    target_lng: typeof body.target_lng === "number" ? body.target_lng : -81.6723,
     status: "pending_approval", result_note: null, image_url: null, created_at: now(), approved_at: null
   };
   await env.DB.prepare(`INSERT INTO drone_missions (id,source_id,target_name,objective,target_lat,target_lng,status,result_note,image_url,created_at,approved_at)

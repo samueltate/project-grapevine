@@ -208,6 +208,10 @@ describe("Grapevine board", () => {
     expect(screen.queryByText(/Last updated/i)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Field inbox" })).toHaveAttribute("href", "/drive");
     expect(screen.queryByText(/payment/i)).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Operational area"), { target: { value: "Other area" } });
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    expect(screen.getByDisplayValue("Watauga Relief Corridor")).toBeInTheDocument();
   });
 
   it("creates an approval-gated request by hand", async () => {
@@ -241,7 +245,7 @@ describe("Grapevine field inbox", () => {
   it("keeps the human responder view inside the shared demo navigation", async () => {
     Object.defineProperty(window, "location", { configurable: true, value: new URL("https://example.test/drive") });
     localStorage.setItem("grapevine.logistics_source_id", "src-boone-field");
-    installFetch();
+    const fetchMock = installFetch();
     render(<App />);
 
     expect(await screen.findByRole("heading", { name: "Field Inbox" })).toBeInTheDocument();
@@ -250,6 +254,18 @@ describe("Grapevine field inbox", () => {
     expect(screen.getByRole("link", { name: "Partner Directory" })).toHaveAttribute("href", "/response");
     expect(screen.getByRole("link", { name: "Warehouse" })).toHaveAttribute("href", "/warehouse");
     expect(screen.queryByText(/sensor registration/i)).not.toBeInTheDocument();
+    expect(await screen.findByText("Quick replies")).toBeInTheDocument();
+    expect(screen.getByLabelText("Message")).toBeInTheDocument();
+    const send = screen.getByRole("button", { name: "Send" });
+    expect(send).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "blocked" }));
+    expect(send).toBeEnabled();
+    expect(fetchMock).not.toHaveBeenCalledWith("/api/sessions/ses-demo/answer", expect.anything());
+    fireEvent.click(send);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      "/api/sessions/ses-demo/answer",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ answer_value: "blocked", answer_note: "" }) })
+    ));
   });
 });
 
