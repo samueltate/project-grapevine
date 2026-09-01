@@ -456,7 +456,6 @@ function Board() {
               {grapevine.baseline ? <>
                 <strong>{baselineStatusText(grapevine.baseline)}</strong>
                 <p>{baselineDetailText(grapevine.baseline)}</p>
-                <small>Last updated {minutesAgo(grapevine.baseline.as_of ?? "")}</small>
               </> : <p className="muted">No baseline loaded.</p>}
             </section>
             <section className="intel-section live-report">

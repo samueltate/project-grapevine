@@ -138,7 +138,7 @@ export default function ResponseApp() {
     <main className="dashboard-main response-main">
       <header className="operation-header response-header">
         <div><p className="eyebrow">Demo 2 · From evidence to coordinated action</p><h1>Resource Coordination</h1><p className="deck">Match verified field needs to crews and priority supplies.</p></div>
-        <span className="demo-badge"><ShieldCheckIcon weight="fill" /> Evidence connected</span>
+        <span className="demo-badge"><ShieldCheckIcon weight="fill" /> Partners connected</span>
       </header>
       {response.error && <p className="error" role="alert">{response.error}</p>}
 

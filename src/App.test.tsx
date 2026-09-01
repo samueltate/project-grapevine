@@ -205,6 +205,7 @@ describe("Grapevine board", () => {
     expect(screen.getByRole("img", { name: "Fallen tree blocking the Mountain Shelter B access route" })).toBeInTheDocument();
     expect(screen.getByText("Creek depth sensor")).toBeInTheDocument();
     expect(screen.getByText("Earlier update says the route was open")).toBeInTheDocument();
+    expect(screen.queryByText(/Last updated/i)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Field inbox" })).toHaveAttribute("href", "/drive");
     expect(screen.queryByText(/payment/i)).not.toBeInTheDocument();
   });
@@ -324,6 +325,7 @@ describe("Grapevine resource coordination", () => {
 
     expect(await screen.findByRole("heading", { name: "Resource Coordination" })).toBeInTheDocument();
     expect(await screen.findByText("High Country Community Response")).toBeInTheDocument();
+    expect(screen.getByText("Partners connected")).toBeInTheDocument();
     await waitFor(() => expect(tools.size).toBe(6));
     expect([...tools.keys()].sort()).toEqual([
       "create_response_shortlist",

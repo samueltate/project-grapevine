@@ -339,10 +339,10 @@ async function handleCheckIn(request: Request, env: Env) {
       place_id, name, address, hours, popular_times_now, rating, lat, lng, is_seeded, updated_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
     ON CONFLICT(place_id) DO UPDATE SET
-      name = excluded.name,
-      lat = excluded.lat,
-      lng = excluded.lng,
-      updated_at = excluded.updated_at`
+      name = CASE WHEN spots.is_seeded = 1 THEN spots.name ELSE excluded.name END,
+      lat = CASE WHEN spots.is_seeded = 1 THEN spots.lat ELSE excluded.lat END,
+      lng = CASE WHEN spots.is_seeded = 1 THEN spots.lng ELSE excluded.lng END,
+      updated_at = CASE WHEN spots.is_seeded = 1 THEN spots.updated_at ELSE excluded.updated_at END`
   )
     .bind(
       placeId,
