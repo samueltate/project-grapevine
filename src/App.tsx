@@ -171,7 +171,7 @@ function SourceMap({
         <span><i className="incident" /> Blockage</span>
       </div>
       <div className="map-caption">
-        <MapPinIcon weight="fill" /> Junaluska Community incident area
+        <MapPinIcon weight="fill" /> Community incident area
       </div>
     </div>
   );
