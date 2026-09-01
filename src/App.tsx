@@ -42,20 +42,6 @@ const defaultQuestions: Record<RequestType, string> = {
   custom: "What conditions should the operations team know about right now?"
 };
 
-function toYoutubeEmbedUrl(url: string): string | null {
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return null;
-  }
-  let videoId = parsed.searchParams.get("v");
-  if (!videoId && parsed.hostname === "youtu.be") videoId = parsed.pathname.slice(1);
-  if (!videoId && parsed.pathname.startsWith("/embed/")) videoId = parsed.pathname.replace("/embed/", "");
-  if (!videoId) return null;
-  return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1&rel=0`;
-}
-
 function statusView(state: WebMCPToolsState) {
   if (state.error) return "Demo helpers could not connect";
   if (state.registered) return `${state.count} ways to check the route`;
@@ -480,21 +466,18 @@ function Board() {
         </section>
 
         {selectedSource?.source_profile === "drone" && grapevine.droneStatus && <section className="drone-panel">
-          {(() => {
-            const embedUrl = grapevine.droneStatus.observation.video_url
-              ? toYoutubeEmbedUrl(grapevine.droneStatus.observation.video_url)
-              : null;
-            return embedUrl ? (
-              <iframe
-                src={embedUrl}
-                title="Live drone feed"
-                allow="autoplay; encrypted-media"
-                frameBorder={0}
-              />
-            ) : (
-              <img src={grapevine.droneStatus.observation.image_url || "/drone-tree-obstruction.png"} alt="Drone view of a fallen tree blocking the relief route" />
-            );
-          })()}
+          {grapevine.droneStatus.observation.video_url ? (
+            <video
+              src={grapevine.droneStatus.observation.video_url}
+              aria-label="Live drone feed"
+              autoPlay
+              muted
+              loop
+              playsInline
+            />
+          ) : (
+            <img src={grapevine.droneStatus.observation.image_url || "/drone-tree-obstruction.png"} alt="Drone view of a fallen tree blocking the relief route" />
+          )}
           <div>
             <p className="eyebrow">Aerial observation</p>
             <h2>{grapevine.droneStatus.observation.classification}</h2>
